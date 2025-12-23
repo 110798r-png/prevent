@@ -2,6 +2,121 @@
 const STORAGE_KEY = "prev_family_pwa_plain_v1";
 const DOCTOR_PIN = "2580";
 
+// === Шаблоны анкет (4 типа) ===
+const ANKETA_TEMPLATES = {
+  child_u2: {
+    title: "Анкета для детей до 2 лет",
+    sections: [
+      {
+        title: "Основная причина обращения",
+        fields: [
+          { id: "reason", label: "Опишите жалобы, симптомы, ожидаемые изменения", type: "textarea", rows: 3 },
+        ],
+      },
+      {
+        title: "Анамнез текущего состояния",
+        fields: [
+          { id: "when_started", label: "Когда впервые возникли жалобы?", type: "textarea", rows: 2 },
+          { id: "how_changed", label: "Как изменялось состояние со временем?", type: "textarea", rows: 2 },
+          { id: "measures", label: "Какие меры предпринимались (лекарства/терапия/обследования)?", type: "textarea", rows: 2 },
+        ],
+      },
+      {
+        title: "Общий анамнез",
+        fields: [
+          { id: "pregnancy_birth", label: "Беременность и роды (протекание/родоразрешение/осложнения)", type: "textarea", rows: 2 },
+          { id: "newborn_period", label: "Период новорождённости (кормление/развитие)", type: "textarea", rows: 2 },
+          { id: "vaccines", label: "Прививки (по графику/отсрочки/отказ)", type: "textarea", rows: 2 },
+          { id: "illness_hosp", label: "Перенесённые заболевания и госпитализации", type: "textarea", rows: 2 },
+          { id: "surgery_trauma", label: "Операции и травмы", type: "textarea", rows: 2 },
+          { id: "chronic", label: "Хронические заболевания (если есть)", type: "textarea", rows: 2 },
+        ],
+      },
+      {
+        title: "Питание",
+        fields: [
+          { id: "infant_feeding", label: "Тип питания в младенчестве (ГВ/ИВ/смешанное)", type: "textarea", rows: 2 },
+          { id: "current_food", label: "Текущее питание (рацион/предпочтения/аллергены)", type: "textarea", rows: 2 },
+          { id: "food_intolerance", label: "Пищевая чувствительность/непереносимость (если есть)", type: "textarea", rows: 2 },
+        ],
+      },
+      {
+        title: "Сон и восстановление",
+        fields: [
+          { id: "sleep_hours", label: "Сколько часов спит ребёнок?", type: "text", placeholder: "например: 10–12" },
+          { id: "sleep_quality", label: "Качество сна (глубокий/прерывистый/бессонница и т.п.)", type: "textarea", rows: 2 },
+          { id: "falls_asleep", label: "Легко ли засыпает?", type: "select", options: ["Да", "Нет", "Иногда"] },
+        ],
+      },
+      {
+        title: "Психоэмоциональное состояние",
+        fields: [
+          { id: "temper", label: "Характер ребёнка (спокойный/тревожный/активный и т.д.)", type: "textarea", rows: 2 },
+          { id: "fears", label: "Есть ли страхи/тревожность/замкнутость?", type: "textarea", rows: 2 },
+          { id: "stress_events", label: "Были ли стрессовые события в жизни ребёнка?", type: "textarea", rows: 2 },
+        ],
+      },
+      {
+        title: "ЖКТ",
+        fields: [
+          { id: "appetite", label: "Аппетит (стабильный/повышенный/сниженный)", type: "text" },
+          { id: "belly_pain", label: "Боли в животе? Когда возникают?", type: "textarea", rows: 2 },
+          { id: "stool", label: "Частота и характер стула", type: "textarea", rows: 2 },
+          { id: "bloating", label: "Вздутие/отрыжка/срыгивание/тошнота/рвота?", type: "textarea", rows: 2 },
+          { id: "gi_intolerance", label: "Непереносимость продуктов", type: "textarea", rows: 2 },
+        ],
+      },
+      {
+        title: "Кожа / Аллергии / Лекарства",
+        fields: [
+          { id: "skin", label: "Кожные проявления (высыпания/зуд/шелушение/экзема и т.п.)", type: "textarea", rows: 2 },
+          { id: "allergy", label: "Аллергические реакции (пища/лекарства/пыль/химия и т.п.)", type: "textarea", rows: 2 },
+          { id: "allergy_how", label: "Как проявляются?", type: "textarea", rows: 2 },
+          { id: "meds", label: "Регулярные/периодические лекарства", type: "textarea", rows: 2 },
+          { id: "supplements", label: "БАДы/витамины/травы", type: "textarea", rows: 2 },
+          { id: "side_effects", label: "Побочные эффекты (если были)", type: "textarea", rows: 2 },
+        ],
+      },
+      {
+        title: "Семейный анамнез",
+        fields: [
+          { id: "family_diseases", label: "Заболевания в семье (ССЗ/онко/диабет/психические/кожные и т.д.)", type: "textarea", rows: 2 },
+          { id: "genetic", label: "Наследственные патологии (если известны)", type: "textarea", rows: 2 },
+        ],
+      },
+    ],
+  },
+
+  child: {
+    title: "Анкета для детей",
+    sections: [] // пока используем тот же набор, что child_u2
+  },
+
+  teen: {
+    title: "Анкета для подростков",
+    sections: [] // заполним тем же каркасом, позже уточним по твоей таблице
+  },
+
+  adult: {
+    title: "Анкета для взрослых",
+    sections: [] // заполним тем же каркасом, позже уточним по твоей таблице
+  },
+};
+
+// Временно: чтобы прямо сейчас всё работало одинаково, копируем структуру child_u2
+ANKETA_TEMPLATES.child.sections = JSON.parse(JSON.stringify(ANKETA_TEMPLATES.child_u2.sections));
+ANKETA_TEMPLATES.teen.sections  = JSON.parse(JSON.stringify(ANKETA_TEMPLATES.child_u2.sections));
+ANKETA_TEMPLATES.adult.sections = JSON.parse(JSON.stringify(ANKETA_TEMPLATES.child_u2.sections));
+
+// Ключ анкеты по возрасту
+function anketaKeyForDob(dob) {
+  const a = ageFromDob(dob);
+  if (a.totalMonths < 24) return "child_u2";
+  if (a.years >= 7 && a.years < 18) return "teen";
+  if (a.years >= 18) return "adult";
+  return "child";
+}
+
 let state; // заполним чуть ниже
 let toastTimeout = null;
 let brandTapTimes = [];
@@ -175,6 +290,33 @@ function makeDemoPatients() {
   return [p1, p2];
 }
 
+function ensureAnketaShape(anketa, member) {
+  if (!anketa) return null;
+
+  // Новый формат
+  if (anketa.answers && typeof anketa.answers === "object") {
+    return {
+      templateKey: anketa.templateKey || anketaKeyForDob(member?.dob),
+      answers: anketa.answers || {},
+      updatedAt: anketa.updatedAt || new Date().toISOString(),
+    };
+  }
+
+  // Старый формат (goal/complaints) — мягкая миграция
+  if (typeof anketa === "object" && ("goal" in anketa || "complaints" in anketa)) {
+    return {
+      templateKey: anketaKeyForDob(member?.dob),
+      answers: {
+        reason: anketa.goal || "",
+        measures: anketa.complaints || "",
+      },
+      updatedAt: anketa.updatedAt || new Date().toISOString(),
+    };
+  }
+
+  return null;
+}
+
 function ensureMemberShape(m) {
   if (!m) return null;
   return {
@@ -183,7 +325,7 @@ function ensureMemberShape(m) {
     name: m.name || "Без имени",
     dob: m.dob || "2000-01-01",
     sex: m.sex || "f",
-    anketa: m.anketa || null,
+    anketa: ensureAnketaShape(m.anketa, m),
     labs: m.labs || {},
     chats:
       Array.isArray(m.chats) && m.chats.length
@@ -216,7 +358,6 @@ function initialState() {
     mode: "patient",          // "patient" | "doctor"
     doctorStatus: "offline",  // "online" | "offline"
 
-    paymentRequests: [],
     toast: "",
     uiAddMemberOpen: false,
     uiAnketaOpen: false,
@@ -320,13 +461,12 @@ function renderTopBar() {
         <div class="w-10 h-10 rounded-2xl bg-gray-900 text-white flex items-center justify-center text-xl">🧬</div>
         <div>
           <div class="font-semibold text-gray-900 leading-tight">PREVENTIVE</div>
-          <div class="text-xs text-gray-500 -mt-0.5">Светлая тема · предпросмотр</div>
+          <div class="text-xs text-gray-500 -mt-0.5">Анкеты семьи · light</div>
         </div>
       </button>
     </div>
   `;
 }
-
 
 function renderStoryCard(title, text) {
   if (!title && !text) return "";
@@ -541,67 +681,7 @@ function renderMemberOverview(member) {
   `;
 }
 
-function renderMemberAnketa(member) {
-  const updated = member.anketa
-    ? new Date(member.anketa.updatedAt).toLocaleString()
-    : "Не заполнена";
 
-  const goal = member.anketa?.goal || "—";
-  const comp = member.anketa?.complaints || "—";
-
-  return `
-    <div class="bg-white rounded-2xl border border-gray-200 p-4 space-y-3">
-      <div class="flex items-start justify-between gap-3">
-        <div>
-          <div class="font-semibold text-gray-900">Анкета</div>
-          <div class="text-sm text-gray-600 mt-1">${escapeHtml(updated)}</div>
-        </div>
-
-        <div class="flex gap-2">
-          ${
-            state.mode === "patient"
-              ? `
-                <button data-action="open-anketa"
-                  class="px-3 py-1.5 rounded-2xl bg-gray-900 text-white text-xs active:scale-95 transition">
-                  ${member.anketa ? "Обновить" : "Заполнить"}
-                </button>
-
-                ${
-                  member.anketa
-                    ? `<button data-action="delete-anketa"
-                        class="px-3 py-1.5 rounded-2xl bg-red-50 text-red-700 text-xs active:scale-95 transition">
-                        Удалить
-                      </button>`
-                    : ""
-                }
-              `
-              : `
-                <div class="px-3 py-1.5 rounded-2xl bg-gray-100 text-xs text-gray-700">
-                  Только просмотр
-                </div>
-              `
-          }
-        </div>
-        
-</div>
-
-      <div class="space-y-3 text-sm">
-        <div>
-          <div class="text-xs text-gray-500">Цель</div>
-          <div class="mt-1 text-gray-900 whitespace-pre-line">${escapeHtml(
-            goal
-          )}</div>
-        </div>
-        <div>
-          <div class="text-xs text-gray-500">Жалобы</div>
-          <div class="mt-1 text-gray-900 whitespace-pre-line">${escapeHtml(
-            comp
-          )}</div>
-        </div>
-      </div>
-    </div>
-  `;
-}
 
 function renderMemberLabs(member) {
   const labsCount = Object.values(member.labs || {}).reduce(
