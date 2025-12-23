@@ -1200,39 +1200,104 @@ function renderModals(activePatient, member) {
   }
 
   if (state.uiAnketaOpen && member && state.mode === "patient") {
-    const goal = member.anketa?.goal || "";
-    const comp = member.anketa?.complaints || "";
-    html += `
-      <div class="fixed inset-0 z-40 flex items-end sm:items-center justify-center bg-black bg-opacity-40">
-        <div class="bg-white rounded-3xl w-full max-w-md mx-4 mb-4 sm:mb-0 p-4 space-y-3">
-          <div class="flex items-center justify-between mb-1">
-            <div>
-              <div class="font-semibold text-gray-900">Анкета (мини)</div>
-              <div class="text-xs text-gray-500">Тип: ${escapeHtml(formTypeFor(member.dob))}</div>
-            </div>
-            <button data-action="close-modal" data-modal="anketa"
-              class="px-2 py-1 rounded-xl bg-gray-100">✕</button>
-          </div>
-          <div class="space-y-3 text-sm">
-            <div>
-              <div class="text-xs text-gray-500">Цель</div>
-              <textarea id="anketaGoal" rows="3"
-                class="mt-1 w-full rounded-2xl border border-gray-300 bg-gray-50 px-3 py-2 text-sm">${escapeHtml(goal)}</textarea>
-            </div>
-            <div>
-              <div class="text-xs text-gray-500">Жалобы</div>
-              <textarea id="anketaComplaints" rows="3"
-                class="mt-1 w-full rounded-2xl border border-gray-300 bg-gray-50 px-3 py-2 text-sm">${escapeHtml(comp)}</textarea>
-            </div>
-          </div>
-          <button data-action="save-anketa"
-            class="w-full mt-2 rounded-2xl bg-gray-900 text-white text-sm py-2.5 active:scale-95 transition">
-            Сохранить
-          </button>
+  const tplKey = (member.anketa?.templateKey) || anketaKeyForDob(member.dob);
+  const tpl = ANKETA_TEMPLATES[tplKey];
+  const answers = member.anketa?.answers || {};
+
+  function fieldHtml(f) {
+    const id = "ank_" + f.id;
+    const val = answers[f.id] ?? "";
+    const label = `<div class="text-xs text-gray-500">${escapeHtml(f.label)}</div>`;
+
+    if (f.type === "textarea") {
+      return `
+        <div>
+          ${label}
+          <textarea id="${id}" rows="${f.rows || 3}"
+            class="mt-1 w-full rounded-2xl border border-gray-300 bg-gray-50 px-3 py-2 text-sm">${escapeHtml(val)}</textarea>
         </div>
+      `;
+    }
+
+    if (f.type === "select") {
+      return `
+        <div>
+          ${label}
+          <select id="${id}"
+            class="mt-1 w-full rounded-2xl border border-gray-300 bg-gray-50 px-3 py-2 text-sm">
+            ${(f.options || []).map(opt => `
+              <option value="${escapeAttr(opt)}" ${String(val) === String(opt) ? "selected" : ""}>${escapeHtml(opt)}</option>
+            `).join("")}
+          </select>
+        </div>
+      `;
+    }
+
+    // text/number
+    return `
+      <div>
+        ${label}
+        <input id="${id}" type="${f.type === "number" ? "number" : "text"}"
+          value="${escapeAttr(val)}"
+          placeholder="${escapeAttr(f.placeholder || "")}"
+          class="mt-1 w-full rounded-2xl border border-gray-300 bg-gray-50 px-3 py-2 text-sm" />
       </div>
     `;
   }
+
+  const sectionsHtml = (tpl?.sections || []).map(sec => `
+    <div class="border border-gray-200 rounded-2xl p-3 bg-white">
+      <div class="font-semibold text-gray-900 text-sm mb-2">${escapeHtml(sec.title)}</div>
+      <div class="space-y-3">
+        ${(sec.fields || []).map(fieldHtml).join("")}
+      </div>
+    </div>
+  `).join("");
+
+  html += `
+    <div class="fixed inset-0 z-40 flex items-end sm:items-center justify-center bg-black bg-opacity-40">
+      <div class="bg-white rounded-3xl w-full max-w-md mx-4 mb-4 sm:mb-0 p-4 space-y-3 max-h-[85vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-1">
+          <div>
+            <div class="font-semibold text-gray-900">${escapeHtml(tpl?.title || "Анкета")}</div>
+            <div class="text-xs text-gray-500">
+              ${escapeHtml(member.name)} · ${escapeHtml(member.dob)} · ${member.sex === "m" ? "М" : "Ж"}
+            </div>
+          </div>
+          <button data-action="close-modal" data-modal="anketa"
+            class="px-2 py-1 rounded-xl bg-gray-100">✕</button>
+        </div>
+
+        <div class="bg-gray-50 border border-gray-200 rounded-2xl p-3">
+          <div class="font-semibold text-gray-900 text-sm mb-2">Общая информация</div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <div class="text-xs text-gray-500">Рост (см)</div>
+              <input id="ank_height_cm" type="number"
+                value="${escapeAttr(answers.height_cm || "")}"
+                class="mt-1 w-full rounded-2xl border border-gray-300 bg-white px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <div class="text-xs text-gray-500">Вес (кг)</div>
+              <input id="ank_weight_kg" type="number"
+                value="${escapeAttr(answers.weight_kg || "")}"
+                class="mt-1 w-full rounded-2xl border border-gray-300 bg-white px-3 py-2 text-sm" />
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          ${sectionsHtml}
+        </div>
+
+        <button data-action="save-anketa"
+          class="w-full mt-2 rounded-2xl bg-gray-900 text-white text-sm py-2.5 active:scale-95 transition">
+          Сохранить
+        </button>
+      </div>
+    </div>
+  `;
+}
 
   return html;
 }
@@ -1389,40 +1454,113 @@ function handleDeleteAnketa() {
 }
 
 function handleSaveAnketa() {
-    if (state.mode !== "patient") {
+  if (state.mode !== "patient") {
     showToast("Анкету может заполнять только пациент");
     return;
   }
-  const goalEl = document.getElementById("anketaGoal");
-  const compEl = document.getElementById("anketaComplaints");
-  if (!goalEl || !compEl) return;
 
-  const goal = goalEl.value.trim();
-  const complaints = compEl.value.trim();
   const member = getActiveMember();
   if (!member) return;
 
+  const tplKey = (member.anketa?.templateKey) || anketaKeyForDob(member.dob);
+  const tpl = ANKETA_TEMPLATES[tplKey];
+  if (!tpl) {
+    showToast("Шаблон анкеты не найден");
+    return;
+  }
+
+  const answers = {};
+
+  // Общая инфа
+  const h = document.getElementById("ank_height_cm");
+  const w = document.getElementById("ank_weight_kg");
+  answers.height_cm = h ? String(h.value || "").trim() : "";
+  answers.weight_kg = w ? String(w.value || "").trim() : "";
+
+  // Поля по шаблону
+  (tpl.sections || []).forEach(sec => {
+    (sec.fields || []).forEach(f => {
+      const el = document.getElementById("ank_" + f.id);
+      answers[f.id] = el ? String(el.value || "").trim() : "";
+    });
+  });
+
   member.anketa = {
-    goal,
-    complaints,
+    templateKey: tplKey,
+    answers,
     updatedAt: new Date().toISOString(),
   };
-  member.chats = member.chats || [];
-  member.chats.push({
-    from: "patient",
-    text: "Я заполнил(а) анкету ✅",
-    ts: Date.now(),
-  });
-  member.chats.push({
-    from: "doctor",
-    text: "Принял(а). Можете при необходимости загрузить анализы и написать вопросы.",
-    ts: Date.now() + 200,
-  });
 
   state.uiAnketaOpen = false;
   saveState();
   render();
   showToast("Анкета сохранена");
+}
+
+function buildAnketaPrintHtml(patient, member) {
+  const tplKey = member.anketa?.templateKey || anketaKeyForDob(member.dob);
+  const tpl = ANKETA_TEMPLATES[tplKey];
+  const a = member.anketa?.answers || {};
+
+  const head = `
+  <html><head><meta charset="utf-8"/>
+  <title>${escapeHtml(tpl?.title || "Анкета")}</title>
+  <style>
+    body{ font-family: Arial, sans-serif; padding:24px; }
+    h1{ font-size:18px; margin:0 0 10px; }
+    .meta{ font-size:12px; color:#444; margin-bottom:14px; }
+    .sec{ margin-top:14px; padding-top:10px; border-top:1px solid #ddd; }
+    .sec h2{ font-size:14px; margin:0 0 8px; }
+    .row{ margin:6px 0; }
+    .q{ font-size:12px; color:#111; font-weight:700; margin-bottom:2px; }
+    .v{ font-size:12px; color:#111; white-space:pre-wrap; }
+  </style></head><body>
+  `;
+
+  const meta = `
+    <h1>${escapeHtml(tpl?.title || "Анкета")}</h1>
+    <div class="meta">
+      Пациент: <b>${escapeHtml(patient?.name || "—")}</b> (${escapeHtml(patient?.phone || "—")})<br/>
+      Член семьи: <b>${escapeHtml(member.name)}</b>, ${escapeHtml(member.dob)}, ${member.sex === "m" ? "М" : "Ж"}<br/>
+      Рост/вес: <b>${escapeHtml(a.height_cm || "—")}</b> см / <b>${escapeHtml(a.weight_kg || "—")}</b> кг<br/>
+      Обновлено: ${escapeHtml(new Date(member.anketa.updatedAt).toLocaleString())}
+    </div>
+  `;
+
+  const sections = (tpl?.sections || []).map(sec => {
+    const rows = (sec.fields || []).map(f => `
+      <div class="row">
+        <div class="q">${escapeHtml(f.label)}</div>
+        <div class="v">${escapeHtml(a[f.id] || "—")}</div>
+      </div>
+    `).join("");
+
+    return `<div class="sec"><h2>${escapeHtml(sec.title)}</h2>${rows}</div>`;
+  }).join("");
+
+  const tail = `</body></html>`;
+  return head + meta + sections + tail;
+}
+
+function handleExportAnketa() {
+  const patient = getActivePatient();
+  const member = getActiveMember();
+  if (!patient || !member || !member.anketa) {
+    showToast("Анкета не заполнена");
+    return;
+  }
+
+  const html = buildAnketaPrintHtml(patient, member);
+  const w = window.open("", "_blank");
+  if (!w) {
+    showToast("Разреши всплывающие окна для экспорта PDF");
+    return;
+  }
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  w.print(); // в печати выбираешь "Save as PDF"
 }
 
 function handleChatSend() {
@@ -1708,6 +1846,10 @@ if (page === "family" && state.mode !== "doctor" && !getActivePatient()) {
   }
   handleConsultPay(el.dataset.type);
   break;
+      case "export-anketa":
+  if (state.mode !== "doctor") { showToast("Только врач"); break; }
+  handleExportAnketa();
+  break;
     case "copy-text":
       handleCopyText(el.dataset.text || "");
       break;
@@ -1742,7 +1884,6 @@ if (page === "family" && state.mode !== "doctor" && !getActivePatient()) {
   render();
   break;
 
-      
           case "doctor-open-member": {
       if (state.mode !== "doctor") { showToast("Только врач"); break; }
       const pid = el.dataset.patientId;
@@ -1752,7 +1893,7 @@ if (page === "family" && state.mode !== "doctor" && !getActivePatient()) {
         p.selectedMemberId = mid;
         state.activePatientId = pid;
         state.page = "member";
-        state.memberTab = "labs";
+        state.memberTab = "anketa";
         saveState();
         render();
         showToast("Открыт профиль члена семьи");
