@@ -382,7 +382,9 @@ function loadState() {
         // НОВОЕ: дефолты для новых полей
     if (!base.mode) base.mode = "patient";
     if (!base.doctorStatus) base.doctorStatus = "offline";
-
+    if (!Array.isArray(base.paymentRequests)) base.paymentRequests = [];
+    if (!Array.isArray(base.notifications)) base.notifications = [];
+    
     if (Array.isArray(base.patients)) {
       base.patients = base.patients.map((p) => {
         const pp = Object.assign({}, p);
@@ -509,10 +511,6 @@ function renderHome() {
                   )}</div>`
                 : ""
             }
-            <button data-action="go-page" data-page="family"
-              class="w-full mt-3 rounded-2xl bg-gray-900 text-white text-sm py-2.5 active:scale-95 transition">
-              👤 Мой профиль
-            </button>
           </div>
         </div>
       </div>
@@ -988,9 +986,7 @@ function renderMember(activePatient, member) {
       return `
         <button data-action="change-member-tab" data-tab="${t.id}"
           class="px-3 py-1.5 rounded-2xl text-sm ${
-            active
-              ? "bg-gray-900 text-white"
-              : "bg-gray-100 text-gray-800"
+            active ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-800"
           } active:scale-95 transition">
           ${t.label}
         </button>
@@ -1006,9 +1002,7 @@ function renderMember(activePatient, member) {
   else if (state.memberTab === "consult")
     content = renderMemberConsult(activePatient, member);
 
-  return `
-    <div class="flex items-center justify-between">
-  ${
+  const backBtn =
     state.mode === "doctor"
       ? `<button data-action="doctor-back-to-patient"
           class="px-3 py-1.5 rounded-2xl bg-gray-100 text-sm text-gray-800 active:scale-95 transition">
@@ -1017,20 +1011,27 @@ function renderMember(activePatient, member) {
       : `<button data-action="go-page" data-page="family"
           class="px-3 py-1.5 rounded-2xl bg-gray-100 text-sm text-gray-800 active:scale-95 transition">
           ← Профиль
-        </button>`
-  }
+        </button>`;
+
+  return `
+    <div class="p-4 space-y-4">
+      <div class="flex items-start justify-between gap-3">
+        ${backBtn}
         <div class="text-right">
-          <div class="font-semibold text-gray-900 text-sm">
-            ${escapeHtml(member.name)}
-          </div>
+          <div class="font-semibold text-gray-900 text-sm">${escapeHtml(member.name)}</div>
           <div class="text-xs text-gray-600">
             ${escapeHtml(member.relation)} • ${escapeHtml(fmtMemberMeta(member))}
           </div>
+          <div class="text-xs text-gray-500 mt-1">
+            Режим: ${state.mode === "doctor" ? "врач" : "пациент"}
+          </div>
         </div>
       </div>
+
       <div class="flex gap-2 overflow-x-auto pb-1">
         ${tabsHtml}
       </div>
+
       ${content}
     </div>
   `;
@@ -1373,8 +1374,8 @@ function renderModals(activePatient, member) {
   `).join("");
 
   html += `
-    <div class="fixed inset-0 z-40 flex items-end sm:items-center justify-center bg-black bg-opacity-40">
-      <div class="bg-white rounded-3xl w-full max-w-md mx-4 mb-4 sm:mb-0 p-4 space-y-3 max-h-[85vh] overflow-y-auto">
+  <div class="fixed inset-0 z-40 bg-black bg-opacity-40 flex items-stretch sm:items-center sm:justify-center">
+    <div class="bg-white w-full h-full sm:h-auto sm:max-h-screen sm:max-w-md sm:rounded-3xl overflow-y-auto p-4 space-y-3">
         <div class="flex items-center justify-between mb-1">
           <div>
             <div class="font-semibold text-gray-900">${escapeHtml(tpl?.title || "Анкета")}</div>
@@ -1434,13 +1435,15 @@ function renderToast() {
 function render() {
   const app = document.getElementById("app");
   if (!app) return;
+  const hasModal = !!(state.uiAddMemberOpen || state.uiAnketaOpen || state.uiRegisterOpen);
+  document.body.style.overflow = hasModal ? "hidden" : "";
   const activePatient = getActivePatient();
   const member = getActiveMember();
   state.doctorStatus =
 state.doctorStatus = state.mode === "doctor" ? "online" : "offline";
   app.innerHTML = `
     <div class="min-h-screen flex justify-center items-start sm:items-center bg-gray-100 p-2 sm:p-4">
-      <div class="w-full max-w-md rounded-3xl border border-gray-200 bg-white shadow-2xl overflow-hidden flex flex-col">
+      <div class="w-full max-w-md rounded-3xl border border-gray-200 bg-white shadow-2xl overflow-hidden flex flex-col h-screen sm:h-auto">
            ${renderTopBar()}
         <div class="flex-1 overflow-y-auto">
           ${renderPage(activePatient, member)}
