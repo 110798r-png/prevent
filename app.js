@@ -683,7 +683,125 @@ function renderMemberOverview(member) {
   `;
 }
 
+function renderMemberAnketa(member) {
+  const tplKey = (member.anketa?.templateKey) || anketaKeyForDob(member.dob);
+  const tpl = ANKETA_TEMPLATES[tplKey];
+  const has = !!member.anketa;
+  const a = member.anketa?.answers || {};
 
+  // считаем, сколько полей заполнено
+  let total = 2; // рост/вес
+  let filled = 0;
+
+  if (String(a.height_cm || "").trim()) filled++;
+  if (String(a.weight_kg || "").trim()) filled++;
+
+  (tpl?.sections || []).forEach(sec => {
+    (sec.fields || []).forEach(f => {
+      total++;
+      if (String(a[f.id] || "").trim()) filled++;
+    });
+  });
+
+  const percent = total ? Math.round((filled / total) * 100) : 0;
+  const updatedAt = has ? new Date(member.anketa.updatedAt).toLocaleString() : "";
+
+  // короткий предпросмотр ответов (для врача удобно)
+  const previewHtml = has
+    ? (tpl?.sections || []).map(sec => {
+        const rows = (sec.fields || [])
+          .map(f => {
+            const val = String(a[f.id] || "").trim();
+            if (!val) return "";
+            const short = val.length > 140 ? val.slice(0, 140) + "…" : val;
+            return `
+              <div class="mt-2">
+                <div class="text-[11px] text-gray-500 font-semibold">${escapeHtml(f.label)}</div>
+                <div class="text-sm text-gray-800 whitespace-pre-line">${escapeHtml(short)}</div>
+              </div>
+            `;
+          })
+          .filter(Boolean)
+          .join("");
+
+        if (!rows) return "";
+        return `
+          <div class="bg-white border border-gray-200 rounded-2xl p-3">
+            <div class="font-semibold text-gray-900 text-sm">${escapeHtml(sec.title)}</div>
+            ${rows}
+          </div>
+        `;
+      }).filter(Boolean).join("")
+    : "";
+
+  const buttons = `
+    <div class="grid grid-cols-2 gap-2">
+      ${
+        state.mode === "patient"
+          ? `<button data-action="open-anketa"
+              class="px-3 py-2 rounded-2xl bg-gray-900 text-white text-sm active:scale-95 transition">
+              ${has ? "Редактировать" : "Заполнить"}
+            </button>`
+          : `<div class="px-3 py-2 rounded-2xl bg-gray-100 text-gray-500 text-sm text-center">
+              Режим врача
+            </div>`
+      }
+
+      ${
+        has && state.mode === "patient"
+          ? `<button data-action="delete-anketa"
+              class="px-3 py-2 rounded-2xl bg-red-50 text-red-700 text-sm active:scale-95 transition">
+              Удалить
+            </button>`
+          : has && state.mode === "doctor"
+            ? `<button data-action="export-anketa"
+                class="px-3 py-2 rounded-2xl bg-gray-900 text-white text-sm active:scale-95 transition">
+                Экспорт PDF
+              </button>`
+            : `<div class="px-3 py-2 rounded-2xl bg-gray-100 text-gray-500 text-sm text-center">
+                —
+              </div>`
+      }
+    </div>
+  `;
+
+  return `
+    <div class="space-y-3">
+      <div class="bg-white rounded-2xl border border-gray-200 p-4">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <div class="font-semibold text-gray-900">${escapeHtml(tpl?.title || "Анкета")}</div>
+            <div class="text-xs text-gray-600 mt-1">
+              Статус: <b>${has ? "заполнена" : "не заполнена"}</b>
+              ${has ? ` • Обновлено: ${escapeHtml(updatedAt)}` : ""}
+            </div>
+          </div>
+          <div class="text-right text-xs text-gray-600">
+            Заполнено: <b>${percent}%</b>
+          </div>
+        </div>
+
+        <div class="mt-3 h-2 bg-gray-100 rounded-full overflow-hidden">
+          <div class="h-2 bg-gray-900" style="width:${percent}%"></div>
+        </div>
+
+        <div class="mt-3">
+          ${buttons}
+        </div>
+      </div>
+
+      ${
+        has
+          ? `<div class="space-y-3">
+              ${previewHtml || `<div class="bg-white rounded-2xl border border-gray-200 p-4 text-sm text-gray-600">Ответы есть, но все поля пустые.</div>`}
+            </div>`
+          : `<div class="bg-white rounded-2xl border border-gray-200 p-4 text-sm text-gray-700">
+              Нажмите <b>«Заполнить»</b> — откроется форма анкеты.
+            </div>`
+      }
+    </div>
+  `;
+}
 
 function renderMemberLabs(member) {
   const labsCount = Object.values(member.labs || {}).reduce(
