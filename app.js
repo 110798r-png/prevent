@@ -216,12 +216,10 @@ function initialState() {
     mode: "patient",          // "patient" | "doctor"
     doctorStatus: "offline",  // "online" | "offline"
 
-    notifications: [],
     paymentRequests: [],
     toast: "",
     uiAddMemberOpen: false,
     uiAnketaOpen: false,
-    uiMenuOpen: false,
     uiRegisterOpen: false,
   };
 }
@@ -264,7 +262,6 @@ function loadState() {
     base.toast = "";
     base.uiAddMemberOpen = false;
     base.uiAnketaOpen = false;
-    base.uiMenuOpen = false;
     base.uiRegisterOpen = false;
 
     return base;
@@ -280,7 +277,6 @@ function saveState() {
       toast,
       uiAddMemberOpen,
       uiAnketaOpen,
-      uiMenuOpen,
        uiRegisterOpen, // ✅ добавь
       ...rest
     } = state;
@@ -316,54 +312,21 @@ function showToast(msg) {
 }
 
 // === Рендер ===
-function renderTopBar(activePatient) {
-  const unread = state.notifications.filter((n) => n.unread).length;
-  const title =
-    state.page === "home" ? "Главный экран врача" : "Личный кабинет";
-  const name = activePatient ? activePatient.name : "Пациент не выбран";
-  const phone = activePatient ? activePatient.phone : "";
-
-  const modeLabel =
-    state.mode === "doctor" ? "Режим: врач" : "Режим: пациент";
-  const statusText =
-  state.mode === "doctor" && state.page === "doctor"
-    ? ` • Статус врача: ${
-        state.doctorStatus === "online" ? "онлайн" : "оффлайн"
-      }`
-    : "";
-
+function renderTopBar() {
   return `
     <div class="px-4 pt-4 pb-3 border-b border-gray-200 bg-white">
-      <div class="flex items-center justify-between">
-        <button data-action="brand-tap" class="flex items-center gap-3 text-left active:scale-95 transition">
-          <div class="w-10 h-10 rounded-2xl bg-gray-900 text-white flex items-center justify-center text-xl">🧬</div>
-          <div>
-            <div class="font-semibold text-gray-900 leading-tight">PREVENTIVE</div>
-            <div class="text-xs text-gray-500 -mt-0.5">Светлая тема · предпросмотр</div>
-          </div>
-        </button>
-        <div class="flex items-center gap-2">
-          <button data-action="bell-read" class="px-3 py-1.5 rounded-2xl border border-gray-300 text-xs bg-gray-50 text-gray-700 active:scale-95 transition">
-            🔔 <span class="ml-1 font-semibold">${unread}</span>
-          </button>
-          <button data-action="open-menu" class="px-3 py-1.5 rounded-2xl border border-gray-300 text-xs bg-gray-50 text-gray-700 active:scale-95 transition">
-            ☰
-          </button>
+      <button data-action="brand-tap"
+        class="flex items-center gap-3 text-left active:scale-95 transition">
+        <div class="w-10 h-10 rounded-2xl bg-gray-900 text-white flex items-center justify-center text-xl">🧬</div>
+        <div>
+          <div class="font-semibold text-gray-900 leading-tight">PREVENTIVE</div>
+          <div class="text-xs text-gray-500 -mt-0.5">Светлая тема · предпросмотр</div>
         </div>
-      </div>
-            <div class="mt-3">
-        <div class="text-xs text-gray-500 mb-1">${title}</div>
-        <div class="font-semibold text-gray-900 text-sm">${escapeHtml(
-          name
-        )}</div>
-        <div class="text-xs text-gray-500">${escapeHtml(phone)}</div>
-        <div class="text-[11px] text-gray-500 mt-0.5">
-          ${modeLabel}${statusText}
-        </div>
-      </div>
+      </button>
     </div>
   `;
 }
+
 
 function renderStoryCard(title, text) {
   if (!title && !text) return "";
@@ -863,7 +826,6 @@ function renderMember(activePatient, member) {
           <div class="text-xs text-gray-600">
             ${escapeHtml(member.relation)} • ${escapeHtml(fmtMemberMeta(member))}
           </div>
-          <div class="text-[11px] text-gray-500 mt-0.5">
             Режим: ${state.mode === "doctor" ? "врач" : "пациент"}
           </div>
         </div>
@@ -1192,46 +1154,6 @@ function renderModals(activePatient, member) {
     `;
   }
 
-  if (state.uiMenuOpen) {
-    html += `
-      <div class="fixed inset-0 z-30 flex items-end sm:items-center justify-center bg-black bg-opacity-40">
-        <div class="bg-white rounded-3xl w-full max-w-xs mx-4 mb-4 sm:mb-0 p-4 space-y-2">
-          <div class="flex items-center justify-between mb-1">
-            <div class="font-semibold text-gray-900 text-sm">Меню</div>
-            <button data-action="close-modal" data-modal="menu"
-              class="px-2 py-1 rounded-xl bg-gray-100">✕</button>
-          </div>
-
-          ${state.mode === "doctor" ? `
-            <button data-action="doctor-exit"
-              class="w-full text-left px-3 py-2 rounded-2xl bg-gray-100 text-sm active:scale-95 transition">
-              ↩ Выйти из кабинета врача
-            </button>
-          ` : ""}
-
-          <button data-action="go-page" data-page="home"
-            class="w-full text-left px-3 py-2 rounded-2xl bg-gray-100 text-sm active:scale-95 transition">
-            🏠 Главный экран
-          </button>
-          <button data-action="go-page" data-page="family"
-            class="w-full text-left px-3 py-2 rounded-2xl bg-gray-100 text-sm active:scale-95 transition">
-            👤 Мой профиль
-          </button>
-          <button data-action="open-doctor-login"
-            class="w-full text-left px-3 py-2 rounded-2xl bg-gray-100 text-sm active:scale-95 transition">
-            🛡️ Вход врача (PIN)
-          </button>
-          ${state.mode === "patient" ? `
-  <button data-action="reset-demo"
-    class="w-full text-left px-3 py-2 rounded-2xl bg-red-50 text-sm text-red-700 active:scale-95 transition">
-    ↺ Сбросить демо-данные
-  </button>
-` : ""}
-        </div>
-      </div>
-    `;
-  }
-
   return html;
 }
 
@@ -1256,7 +1178,7 @@ function render() {
   app.innerHTML = `
     <div class="min-h-screen flex justify-center items-start sm:items-center bg-gray-100 p-2 sm:p-4">
       <div class="w-full max-w-md rounded-3xl border border-gray-200 bg-white shadow-2xl overflow-hidden flex flex-col">
-        ${renderTopBar(activePatient)}
+           ${renderTopBar()}
         <div class="flex-1 overflow-y-auto">
           ${renderPage(activePatient, member)}
         </div>
@@ -1496,17 +1418,6 @@ function handleConsultPay(type) {
   };
   state.paymentRequests = [req, ...(state.paymentRequests || [])];
 
-  const notif = {
-    id: uid("n"),
-    title: "Оплата отмечена",
-    body: `${patient.name} (${patient.phone}): ${
-      type === "urgent" ? "Срочная" : "Превентивная"
-    } — ${member.name}`,
-    createdAt: new Date().toISOString(),
-    unread: true,
-  };
-  state.notifications = [notif, ...(state.notifications || [])];
-
   saveState();
   render();
   showToast("Заявка отправлена врачу");
@@ -1582,9 +1493,6 @@ function openDoctorLogin() {
       state.doctorStatus = "online"; // по умолчанию онлайн
     }
     state.page = "doctor";
-    (state.notifications || []).forEach((n) => {
-      n.unread = false;
-    });
     saveState();
     render();
     showToast("Вход врача");
@@ -1723,22 +1631,9 @@ if (page === "family" && state.mode !== "doctor" && !getActivePatient()) {
     case "copy-text":
       handleCopyText(el.dataset.text || "");
       break;
-    case "bell-read":
-      handleBellRead();
-      break;
     case "brand-tap":
       handleBrandTap();
       break;
-    case "open-menu":
-      state.uiMenuOpen = true;
-      render();
-      break;
-    case "open-doctor-login":
-  state.uiMenuOpen = false;
-  state.doctorView = "patients";
-  render();
-  openDoctorLogin();
-  break;
       case "delete-account":
   if (state.mode !== "patient") { showToast("Только пациент"); break; }
   handleDeleteAccount();
