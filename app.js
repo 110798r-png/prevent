@@ -357,6 +357,8 @@ function initialState() {
     // НОВОЕ: кто сейчас сидит в приложении и какой статус у врача
     mode: "patient",          // "patient" | "doctor"
     doctorStatus: "offline",  // "online" | "offline"
+    paymentRequests: [],
+    notifications: [],
 
     toast: "",
     uiAddMemberOpen: false,
@@ -906,8 +908,6 @@ function renderMember(activePatient, member) {
           <div class="text-xs text-gray-600">
             ${escapeHtml(member.relation)} • ${escapeHtml(fmtMemberMeta(member))}
           </div>
-            Режим: ${state.mode === "doctor" ? "врач" : "пациент"}
-          </div>
         </div>
       </div>
       <div class="flex gap-2 overflow-x-auto pb-1">
@@ -1319,7 +1319,7 @@ function render() {
   const activePatient = getActivePatient();
   const member = getActiveMember();
   state.doctorStatus =
-  state.mode === "doctor" && state.page === "doctor" ? "online" : "offline";
+state.doctorStatus = state.mode === "doctor" ? "online" : "offline";
   app.innerHTML = `
     <div class="min-h-screen flex justify-center items-start sm:items-center bg-gray-100 p-2 sm:p-4">
       <div class="w-full max-w-md rounded-3xl border border-gray-200 bg-white shadow-2xl overflow-hidden flex flex-col">
@@ -1428,7 +1428,6 @@ function handleDeleteAccount() {
 
   state.uiAddMemberOpen = false;
   state.uiAnketaOpen = false;
-  state.uiMenuOpen = false;
   state.uiRegisterOpen = false;
 
   saveState();
@@ -1687,20 +1686,6 @@ function handleCopyText(text) {
     .catch(() => showToast("Не удалось скопировать"));
 }
 
-function handleBellRead() {
-  const unread = (state.notifications || []).filter((n) => n.unread).length;
-  if (!unread) {
-    showToast("Нет новых уведомлений");
-    return;
-  }
-  (state.notifications || []).forEach((n) => {
-    n.unread = false;
-  });
-  saveState();
-  render();
-  showToast("Уведомления прочитаны");
-}
-
 function openDoctorLogin() {
   const pin = window.prompt("PIN врача");
   if (!pin) return;
@@ -1794,15 +1779,13 @@ if (page === "family" && state.mode !== "doctor" && !getActivePatient()) {
   state.uiAddMemberOpen = true;
   render();
   break;
-
-  state.uiAddMemberOpen = true;
+      
   render();
   break;
     case "close-modal": {
       const modal = el.dataset.modal;
       if (modal === "add-member") state.uiAddMemberOpen = false;
       else if (modal === "anketa") state.uiAnketaOpen = false;
-      else if (modal === "menu") state.uiMenuOpen = false;
       else if (modal === "register") state.uiRegisterOpen = false;
       render();
       break;
