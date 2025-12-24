@@ -867,7 +867,7 @@ function renderMemberChat(member) {
           </div>
         </div>
       </div>
-      <div class="flex-1 px-4 py-3 space-y-2 overflow-y-auto bg-white">
+<div id="chatList" class="flex-1 px-4 py-3 space-y-2 overflow-y-auto bg-white">
         ${msgsHtml}
       </div>
       <div class="px-3 py-3 border-t border-gray-200 bg-white flex gap-2">
@@ -1008,10 +1008,7 @@ function renderMember(activePatient, member) {
           class="px-3 py-1.5 rounded-2xl bg-gray-100 text-sm text-gray-800 active:scale-95 transition">
           ← Назад
         </button>`
-      : `<button data-action="go-page" data-page="family"
-          class="px-3 py-1.5 rounded-2xl bg-gray-100 text-sm text-gray-800 active:scale-95 transition">
-          ← Профиль
-        </button>`;
+      : `;
 
   return `
     <div class="p-4 space-y-4">
@@ -1192,7 +1189,6 @@ function renderDoctor() {
 }
 
 function renderBottomNav() {
-  // улучшено: если включён режим врача — кнопка ведёт обратно в кабинет врача
   const inDoctorMode = state.mode === "doctor";
 
   let label = "🏠 Главный экран";
@@ -1213,7 +1209,8 @@ function renderBottomNav() {
   }
 
   return `
-    <div class="border-t border-gray-200 bg-white px-4 py-3">
+    <div class="border-t border-gray-200 bg-white px-4 pt-3"
+         style="padding-bottom: calc(env(safe-area-inset-bottom) + 12px);">
       <button data-action="go-page" data-page="${target}"
         class="w-full rounded-2xl bg-gray-900 text-white text-sm py-3 active:scale-95 transition">
         ${label}
@@ -1225,37 +1222,40 @@ function renderBottomNav() {
 function renderModals(activePatient, member) {
   let html = "";
   if (state.uiRegisterOpen && state.mode === "patient") {
-  html += `
-    <div class="fixed inset-0 z-40 flex items-end sm:items-center justify-center bg-black bg-opacity-40">
-      <div class="bg-white rounded-3xl w-full max-w-md mx-4 mb-4 sm:mb-0 p-4 space-y-3">
-        <div class="flex items-center justify-between">
+    html += `
+    <div class="fixed inset-0 z-40 bg-black bg-opacity-40 flex justify-center"
+         style="height: calc(var(--vh, 1vh) * 100);">
+      <div class="bg-white w-full max-w-md flex flex-col"
+           style="height: calc(var(--vh, 1vh) * 100);">
+
+        <div class="p-4 border-b border-gray-200 bg-white flex items-center justify-between">
           <div>
-            <div class="font-semibold text-gray-900">Регистрация</div>
-            <div class="text-xs text-gray-500">Пока без SMS. Позже добавим код по номеру.</div>
+            <div class="font-semibold text-gray-900">${escapeHtml(tpl?.title || "Анкета")}</div>
+            <div class="text-xs text-gray-500">
+              ${escapeHtml(member.name)} · ${escapeHtml(member.dob)} · ${member.sex === "m" ? "М" : "Ж"}
+            </div>
           </div>
-          <button data-action="close-modal" data-modal="register"
+          <button data-action="close-modal" data-modal="anketa"
             class="px-2 py-1 rounded-xl bg-gray-100">✕</button>
         </div>
 
-        <div class="space-y-3 text-sm">
-          <div>
-            <div class="text-xs text-gray-500">ФИО</div>
-            <input id="regName" type="text"
-              class="mt-1 w-full rounded-2xl border border-gray-300 bg-gray-50 px-3 py-2 text-sm"
-              placeholder="Иван Иванов" />
+        <div class="flex-1 overflow-y-auto p-4 space-y-3">
+          <div class="bg-gray-50 border border-gray-200 rounded-2xl p-3">
+            ... ТВОЙ БЛОК "Общая информация" ...
           </div>
-          <div>
-            <div class="text-xs text-gray-500">Телефон</div>
-            <input id="regPhone" type="tel"
-              class="mt-1 w-full rounded-2xl border border-gray-300 bg-gray-50 px-3 py-2 text-sm"
-              placeholder="+79990000000" />
+
+          <div class="space-y-3">
+            ${sectionsHtml}
           </div>
         </div>
 
-        <button data-action="save-register"
-          class="w-full mt-2 rounded-2xl bg-gray-900 text-white text-sm py-2.5 active:scale-95 transition">
-          Создать профиль
-        </button>
+        <div class="p-4 border-t border-gray-200 bg-white">
+          <button data-action="save-anketa"
+            class="w-full rounded-2xl bg-gray-900 text-white text-sm py-2.5 active:scale-95 transition">
+            Сохранить
+          </button>
+        </div>
+
       </div>
     </div>
   `;
@@ -1435,21 +1435,35 @@ function renderToast() {
 function render() {
   const app = document.getElementById("app");
   if (!app) return;
-  const hasModal = !!(state.uiAddMemberOpen || state.uiAnketaOpen || state.uiRegisterOpen);
-  document.body.style.overflow = hasModal ? "hidden" : "";
+
   const activePatient = getActivePatient();
   const member = getActiveMember();
-  state.doctorStatus =
-state.doctorStatus = state.mode === "doctor" ? "online" : "offline";
+
+  // ✅ врач онлайн всегда, когда mode === doctor (а не только на странице doctor)
+  state.doctorStatus = state.mode === "doctor" ? "online" : "offline";
+
+  // ✅ запрещаем скролл body, чтобы не "уезжала" нижняя кнопка и чат
+  document.documentElement.style.height = "100%";
+  document.body.style.height = "100%";
+  document.documentElement.style.overflow = "hidden";
+  document.body.style.overflow = "hidden";
+
   app.innerHTML = `
-    <div class="min-h-screen flex justify-center items-start sm:items-center bg-gray-100 p-2 sm:p-4">
-      <div class="w-full max-w-md rounded-3xl border border-gray-200 bg-white shadow-2xl overflow-hidden flex flex-col h-screen sm:h-auto">
-           ${renderTopBar()}
-        <div class="flex-1 overflow-y-auto">
+    <div class="bg-gray-100 flex justify-center"
+         style="height: calc(var(--vh, 1vh) * 100); overflow:hidden;">
+      <div class="w-full max-w-md bg-white shadow-2xl border border-gray-200 overflow-hidden flex flex-col"
+           style="height: 100%;">
+        ${renderTopBar()}
+
+        <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain">
           ${renderPage(activePatient, member)}
         </div>
-        ${renderBottomNav()}
+
+        <div class="shrink-0">
+          ${renderBottomNav()}
+        </div>
       </div>
+
       ${renderModals(activePatient, member)}
       ${renderToast()}
     </div>
@@ -1705,6 +1719,11 @@ function handleChatSend() {
   saveState();
   render();
 
+    setTimeout(() => {
+    const list = document.getElementById("chatList");
+    if (list) list.scrollTop = list.scrollHeight;
+  }, 0);
+  
   // автоответ врача только если пишет пациент
   if (state.mode === "patient") {
     setTimeout(() => {
@@ -2025,6 +2044,15 @@ if (page === "family" && state.mode !== "doctor" && !getActivePatient()) {
   }
 });
 
+function setAppVh() {
+  document.documentElement.style.setProperty("--vh", `${window.innerHeight * 0.01}px`);
+}
+window.addEventListener("resize", setAppVh);
+setAppVh();
+
 // === Старт ===
 state = loadState();
 render();
+    const allowed = ["home", "family", "member", "doctor"];
+    if (!allowed.includes(base.page)) base.page = "home";
+
