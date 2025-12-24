@@ -857,7 +857,7 @@ function renderMemberChat(member) {
     .join("");
 
   return `
-    <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col h-[360px]">
+   <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col h-full min-h-0">
       <div class="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
         <div>
           <div class="font-semibold text-gray-900 text-sm">Чат с врачом</div>
@@ -867,7 +867,7 @@ function renderMemberChat(member) {
           </div>
         </div>
       </div>
-<div id="chatList" class="flex-1 px-4 py-3 space-y-2 overflow-y-auto bg-white">
+<div id="chatList" class="flex-1 min-h-0 px-4 py-3 space-y-2 overflow-y-auto bg-white">
         ${msgsHtml}
       </div>
       <div class="px-3 py-3 border-t border-gray-200 bg-white flex gap-2">
@@ -1003,35 +1003,39 @@ function renderMember(activePatient, member) {
     content = renderMemberConsult(activePatient, member);
 
   const backBtn =
-    state.mode === "doctor"
-      ? `<button data-action="doctor-back-to-patient"
-          class="px-3 py-1.5 rounded-2xl bg-gray-100 text-sm text-gray-800 active:scale-95 transition">
-          ← Назад
-        </button>`
-      : `;
+  state.mode === "doctor"
+    ? `<button data-action="doctor-back-to-patient"
+        class="px-3 py-1.5 rounded-2xl bg-gray-100 text-sm text-gray-800 active:scale-95 transition">
+        ← Назад
+      </button>`
+    : "";
 
-  return `
-    <div class="p-4 space-y-4">
-      <div class="flex items-start justify-between gap-3">
-        ${backBtn}
-        <div class="text-right">
-          <div class="font-semibold text-gray-900 text-sm">${escapeHtml(member.name)}</div>
-          <div class="text-xs text-gray-600">
-            ${escapeHtml(member.relation)} • ${escapeHtml(fmtMemberMeta(member))}
-          </div>
-          <div class="text-xs text-gray-500 mt-1">
-            Режим: ${state.mode === "doctor" ? "врач" : "пациент"}
-          </div>
+ const isChat = state.memberTab === "chat";
+
+return `
+  <div class="p-4 ${isChat ? "h-full flex flex-col min-h-0 space-y-4" : "space-y-4"}">
+    <div class="${isChat ? "shrink-0 flex items-start justify-between gap-3" : "flex items-start justify-between gap-3"}">
+      ${backBtn}
+      <div class="text-right">
+        <div class="font-semibold text-gray-900 text-sm">${escapeHtml(member.name)}</div>
+        <div class="text-xs text-gray-600">
+          ${escapeHtml(member.relation)} • ${escapeHtml(fmtMemberMeta(member))}
+        </div>
+        <div class="text-xs text-gray-500 mt-1">
+          Режим: ${state.mode === "doctor" ? "врач" : "пациент"}
         </div>
       </div>
+    </div>
 
-      <div class="flex gap-2 overflow-x-auto pb-1">
-        ${tabsHtml}
-      </div>
+    <div class="${isChat ? "shrink-0 flex gap-2 overflow-x-auto pb-1" : "flex gap-2 overflow-x-auto pb-1"}">
+      ${tabsHtml}
+    </div>
 
+    <div class="${isChat ? "flex-1 min-h-0" : ""}">
       ${content}
     </div>
-  `;
+  </div>
+`;
 }
 
 function renderDoctor() {
@@ -1221,45 +1225,55 @@ function renderBottomNav() {
 
 function renderModals(activePatient, member) {
   let html = "";
+   // ✅ Модалка регистрации (создание профиля пациента)
   if (state.uiRegisterOpen && state.mode === "patient") {
     html += `
-    <div class="fixed inset-0 z-40 bg-black bg-opacity-40 flex justify-center"
-         style="height: calc(var(--vh, 1vh) * 100);">
-      <div class="bg-white w-full max-w-md flex flex-col"
+      <div class="fixed inset-0 z-40 bg-black bg-opacity-40 flex items-end sm:items-center justify-center"
            style="height: calc(var(--vh, 1vh) * 100);">
+        <div class="bg-white w-full max-w-md sm:rounded-3xl overflow-hidden shadow-2xl"
+             style="max-height: calc(var(--vh, 1vh) * 100);">
 
-        <div class="p-4 border-b border-gray-200 bg-white flex items-center justify-between">
-          <div>
-            <div class="font-semibold text-gray-900">${escapeHtml(tpl?.title || "Анкета")}</div>
-            <div class="text-xs text-gray-500">
-              ${escapeHtml(member.name)} · ${escapeHtml(member.dob)} · ${member.sex === "m" ? "М" : "Ж"}
+          <div class="p-4 border-b border-gray-200 bg-white flex items-center justify-between">
+            <div>
+              <div class="font-semibold text-gray-900">Регистрация</div>
+              <div class="text-xs text-gray-500">Создайте профиль пациента</div>
+            </div>
+            <button data-action="close-modal" data-modal="register"
+              class="px-2 py-1 rounded-xl bg-gray-100 active:scale-95 transition">✕</button>
+          </div>
+
+          <div class="p-4 space-y-3">
+            <div>
+              <div class="text-xs text-gray-500">ФИО</div>
+              <input id="regName" type="text"
+                placeholder="Например: Иван Иванов"
+                class="mt-1 w-full rounded-2xl border border-gray-300 bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-200" />
+            </div>
+
+            <div>
+              <div class="text-xs text-gray-500">Телефон</div>
+              <input id="regPhone" type="tel"
+                placeholder="+7 999 123-45-67"
+                class="mt-1 w-full rounded-2xl border border-gray-300 bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-200" />
+              <div class="text-[11px] text-gray-400 mt-1">Можно в любом формате — сохранится как ввели.</div>
+            </div>
+
+            <div class="bg-gray-50 border border-gray-200 rounded-2xl p-3 text-sm text-gray-700">
+              После создания профиля вы сможете добавить членов семьи и заполнить анкеты.
             </div>
           </div>
-          <button data-action="close-modal" data-modal="anketa"
-            class="px-2 py-1 rounded-xl bg-gray-100">✕</button>
-        </div>
 
-        <div class="flex-1 overflow-y-auto p-4 space-y-3">
-          <div class="bg-gray-50 border border-gray-200 rounded-2xl p-3">
-            ... ТВОЙ БЛОК "Общая информация" ...
+          <div class="p-4 border-t border-gray-200 bg-white">
+            <button data-action="save-register"
+              class="w-full rounded-2xl bg-gray-900 text-white text-sm py-2.5 active:scale-95 transition">
+              Создать профиль
+            </button>
           </div>
 
-          <div class="space-y-3">
-            ${sectionsHtml}
-          </div>
         </div>
-
-        <div class="p-4 border-t border-gray-200 bg-white">
-          <button data-action="save-anketa"
-            class="w-full rounded-2xl bg-gray-900 text-white text-sm py-2.5 active:scale-95 transition">
-            Сохранить
-          </button>
-        </div>
-
       </div>
-    </div>
-  `;
-}
+    `;
+  }
   
   if (state.uiAddMemberOpen && state.mode === "patient") {
     html += `
@@ -1455,7 +1469,7 @@ function render() {
            style="height: 100%;">
         ${renderTopBar()}
 
-        <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain">
+          <div class="flex-1 min-h-0 ${state.page === "member" && state.memberTab === "chat" ? "overflow-hidden" : "overflow-y-auto overscroll-contain"}">
           ${renderPage(activePatient, member)}
         </div>
 
@@ -1881,6 +1895,12 @@ function handleChangeMemberTab(tab) {
   state.memberTab = tab;
   saveState();
   render();
+  if (tab === "chat") {
+  setTimeout(() => {
+    const list = document.getElementById("chatList");
+    if (list) list.scrollTop = list.scrollHeight;
+  }, 0);
+}
 }
 
 // === Глобальный обработчик кликов ===
@@ -1919,9 +1939,6 @@ if (page === "family" && state.mode !== "doctor" && !getActivePatient()) {
   state.uiAddMemberOpen = true;
   render();
   break;
-      
-  render();
-  break;
     case "close-modal": {
       const modal = el.dataset.modal;
       if (modal === "add-member") state.uiAddMemberOpen = false;
@@ -1949,8 +1966,6 @@ if (page === "family" && state.mode !== "doctor" && !getActivePatient()) {
   render();
   break;
   state.uiAnketaOpen = true;
-  render();
-  break;
       case "delete-anketa":
   if (state.mode !== "patient") { showToast("Только пациент"); break; }
   handleDeleteAnketa();
@@ -2051,8 +2066,10 @@ window.addEventListener("resize", setAppVh);
 setAppVh();
 
 // === Старт ===
-state = loadState();
-render();
-    const allowed = ["home", "family", "member", "doctor"];
-    if (!allowed.includes(base.page)) base.page = "home";
+setAppVh();
 
+state = loadState();
+const allowed = ["home", "family", "member", "doctor"];
+if (!allowed.includes(state.page)) state.page = "home";
+
+render();
