@@ -104,9 +104,6 @@ const ANKETA_TEMPLATES = {
 };
 
 // Временно: чтобы прямо сейчас всё работало одинаково, копируем структуру child_u2
-ANKETA_TEMPLATES.child.sections = JSON.parse(JSON.stringify(ANKETA_TEMPLATES.child_u2.sections));
-ANKETA_TEMPLATES.teen.sections  = JSON.parse(JSON.stringify(ANKETA_TEMPLATES.child_u2.sections));
-ANKETA_TEMPLATES.adult.sections = JSON.parse(JSON.stringify(ANKETA_TEMPLATES.child_u2.sections));
 
 // Ключ анкеты по возрасту
 function anketaKeyForDob(dob) {
@@ -224,7 +221,6 @@ function defaultMember({ name, dob, sex, relation }) {
       },
     ],
     consult: {
-      urgent: "none",
       prev: "none",
     },
   };
@@ -337,7 +333,9 @@ function ensureMemberShape(m) {
               ts: Date.now(),
             },
           ],
-    consult: m.consult || { urgent: "none", prev: "none" },
+    consult: {
+  prev: (m.consult && m.consult.prev) ? m.consult.prev : "none",
+},
   };
 }
 
@@ -574,11 +572,7 @@ function renderFamily(activePatient) {
         0
       );
       const ank = m.anketa ? "заполнена" : "нет";
-      const cons =
-        (m.consult?.urgent || "none") !== "none" ||
-        (m.consult?.prev || "none") !== "none"
-          ? "есть"
-          : "нет";
+      const cons = (m.consult?.prev || "none") !== "none" ? "есть" : "нет";
 
       return `
         <button data-action="select-member" data-member-id="${m.id}"
@@ -645,10 +639,8 @@ function renderMemberOverview(member) {
     0
   );
   const consLabels = [];
-  if ((member.consult?.urgent || "none") !== "none")
-    consLabels.push("Срочная");
-  if ((member.consult?.prev || "none") !== "none")
-    consLabels.push("Превентивная");
+const consLabels = [];
+if ((member.consult?.prev || "none") !== "none") consLabels.push("Превентивная");
   const consLabel = consLabels.length ? consLabels.join(" · ") : "нет";
 
   return `
@@ -682,7 +674,7 @@ function renderMemberOverview(member) {
 }
 
 function renderMemberAnketa(member) {
-  const tplKey = (member.anketa?.templateKey) || anketaKeyForDob(member.dob);
+  const tplKey = anketaKeyForDob(member.dob);
   const tpl = ANKETA_TEMPLATES[tplKey];
   const has = !!member.anketa;
   const a = member.anketa?.answers || {};
@@ -883,7 +875,6 @@ function renderMemberChat(member) {
 }
 
 function renderMemberConsult(activePatient, member) {
-  const urgentStatus = member.consult?.urgent || "none";
   const prevStatus = member.consult?.prev || "none";
   const isPatient = state.mode === "patient";
 
@@ -895,7 +886,6 @@ function renderMemberConsult(activePatient, member) {
   }
 
   const phone = activePatient ? activePatient.phone : "";
-  const baseUrgent = `URGENT • ${phone} • ${member.name}`;
   const basePrev = `PREV • ${phone} • ${member.name}`;
 
   function actionsBlock(text, type) {
@@ -925,7 +915,6 @@ function renderMemberConsult(activePatient, member) {
       <div class="bg-white rounded-2xl border border-gray-200 p-4 text-sm">
         <div class="flex items-start justify-between gap-3">
           <div>
-            <div class="font-semibold text-gray-900">💬 Срочная консультация</div>
             <div class="text-xs text-gray-600 mt-1">Приоритетный ответ</div>
           </div>
           <div class="text-xs text-gray-600">
@@ -940,7 +929,6 @@ function renderMemberConsult(activePatient, member) {
           Комментарий: <b>${escapeHtml(baseUrgent)}</b>
         </div>
 
-        ${actionsBlock(baseUrgent, "urgent")}
       </div>
 
       <div class="bg-white rounded-2xl border border-gray-200 p-4 text-sm">
@@ -1105,7 +1093,7 @@ function renderDoctor() {
           .map((r) => {
             const p = patients.find((x) => x.id === r.patientId);
             const m = p?.members?.find((x) => x.id === r.memberId);
-            const label = r.type === "urgent" ? "Срочная" : "Превентивная";
+            const label = "Превентивная";
             return `
               <div class="bg-gray-50 border border-gray-200 rounded-2xl p-3 text-sm">
                 <div class="font-semibold text-gray-900">
@@ -1333,7 +1321,7 @@ function renderModals(activePatient, member) {
   }
 
   if (state.uiAnketaOpen && member && state.mode === "patient") {
-  const tplKey = (member.anketa?.templateKey) || anketaKeyForDob(member.dob);
+  const tplKey = anketaKeyForDob(member.dob);
   const tpl = ANKETA_TEMPLATES[tplKey];
   const answers = member.anketa?.answers || {};
 
@@ -1610,7 +1598,7 @@ function handleSaveAnketa() {
   const member = getActiveMember();
   if (!member) return;
 
-  const tplKey = (member.anketa?.templateKey) || anketaKeyForDob(member.dob);
+  const tplKey = anketaKeyForDob(member.dob);
   const tpl = ANKETA_TEMPLATES[tplKey];
   if (!tpl) {
     showToast("Шаблон анкеты не найден");
@@ -1756,6 +1744,10 @@ function handleChatSend() {
 }
 
 function handleConsultPay(type) {
+  if (type !== "prev") {
+  showToast("Доступна только превентивная консультация");
+  return;
+}
     if (state.mode !== "patient") {
     showToast("Отметить оплату может только пациент");
     return;
@@ -1808,7 +1800,7 @@ function handleDoctorConfirmPay(id, ok) {
   const member = patient?.members?.find((m) => m.id === r.memberId);
   if (member) {
     member.consult = member.consult || { urgent: "none", prev: "none" };
-    const label = r.type === "urgent" ? "Срочная" : "Превентивная";
+    const label = "Превентивная";
     if (ok) {
       member.consult[r.type] = "active";
     } else {
