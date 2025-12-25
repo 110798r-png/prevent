@@ -4,13 +4,13 @@ const DOCTOR_PIN = "2580";
 
 // === Шаблоны анкет (4 типа) ===
 const ANKETA_TEMPLATES = {
-  child_u2: {
-    title: "Анкета для детей до 2 лет",
+   child: {
+    title: "Анкета для детей",
     sections: [
       {
         title: "Основная причина обращения",
         fields: [
-          { id: "reason", label: "Опишите жалобы, симптомы, ожидаемые изменения", type: "textarea", rows: 3 },
+          { id: "reason", label: "Опишите жалобы, симптомы, ожидаемые изменения в состоянии здоровья", type: "textarea", rows: 3 },
         ],
       },
       {
@@ -18,88 +18,235 @@ const ANKETA_TEMPLATES = {
         fields: [
           { id: "when_started", label: "Когда впервые возникли жалобы?", type: "textarea", rows: 2 },
           { id: "how_changed", label: "Как изменялось состояние со временем?", type: "textarea", rows: 2 },
-          { id: "measures", label: "Какие меры предпринимались (лекарства/терапия/обследования)?", type: "textarea", rows: 2 },
+          { id: "measures", label: "Какие меры предпринимались (медикаменты, терапия, обследования)?", type: "textarea", rows: 2 },
         ],
       },
       {
         title: "Общий анамнез",
         fields: [
-          { id: "pregnancy_birth", label: "Беременность и роды (протекание/родоразрешение/осложнения)", type: "textarea", rows: 2 },
-          { id: "newborn_period", label: "Период новорождённости (кормление/развитие)", type: "textarea", rows: 2 },
+          { id: "pregnancy_birth", label: "Беременность и роды (протекание, родоразрешение, осложнения)", type: "textarea", rows: 2 },
+          { id: "newborn_period", label: "Период новорождённости (апгар, кормление, развитие)", type: "textarea", rows: 2 },
           { id: "vaccines", label: "Прививки (по графику/отсрочки/отказ)", type: "textarea", rows: 2 },
           { id: "illness_hosp", label: "Перенесённые заболевания и госпитализации", type: "textarea", rows: 2 },
           { id: "surgery_trauma", label: "Операции и травмы", type: "textarea", rows: 2 },
-          { id: "chronic", label: "Хронические заболевания (если есть)", type: "textarea", rows: 2 },
+          { id: "chronic", label: "Наличие хронических заболеваний (астма, дерматит, аллергия, эпилепсия и др.)", type: "textarea", rows: 2 },
         ],
       },
       {
         title: "Питание",
         fields: [
-          { id: "infant_feeding", label: "Тип питания в младенчестве (ГВ/ИВ/смешанное)", type: "textarea", rows: 2 },
-          { id: "current_food", label: "Текущее питание (рацион/предпочтения/аллергены)", type: "textarea", rows: 2 },
-          { id: "food_intolerance", label: "Пищевая чувствительность/непереносимость (если есть)", type: "textarea", rows: 2 },
+          { id: "infant_feeding", label: "Тип питания в младенчестве (грудное, искусственное, смешанное)", type: "textarea", rows: 2 },
+          { id: "current_food", label: "Современное питание (рацион, предпочтения, аллергии)", type: "textarea", rows: 2 },
+          { id: "food_intolerance", label: "Есть ли пищевая чувствительность или непереносимость?", type: "textarea", rows: 2 },
         ],
       },
       {
         title: "Сон и восстановление",
         fields: [
           { id: "sleep_hours", label: "Сколько часов спит ребёнок?", type: "text", placeholder: "например: 10–12" },
-          { id: "sleep_quality", label: "Качество сна (глубокий/прерывистый/бессонница и т.п.)", type: "textarea", rows: 2 },
+          { id: "sleep_quality", label: "Качество сна (глубокий, прерывистый, бессонница и т.п.)", type: "textarea", rows: 2 },
           { id: "falls_asleep", label: "Легко ли засыпает?", type: "select", options: ["Да", "Нет", "Иногда"] },
         ],
       },
       {
         title: "Психоэмоциональное состояние",
         fields: [
-          { id: "temper", label: "Характер ребёнка (спокойный/тревожный/активный и т.д.)", type: "textarea", rows: 2 },
-          { id: "fears", label: "Есть ли страхи/тревожность/замкнутость?", type: "textarea", rows: 2 },
+          { id: "temper", label: "Характер ребёнка (спокойный, тревожный, активный и т.д.)", type: "textarea", rows: 2 },
+          { id: "fears", label: "Есть ли страхи, тревожность, замкнутость?", type: "textarea", rows: 2 },
           { id: "stress_events", label: "Были ли стрессовые события в жизни ребёнка?", type: "textarea", rows: 2 },
         ],
       },
       {
-        title: "ЖКТ",
+        title: "Состояние ЖКТ",
         fields: [
-          { id: "appetite", label: "Аппетит (стабильный/повышенный/сниженный)", type: "text" },
-          { id: "belly_pain", label: "Боли в животе? Когда возникают?", type: "textarea", rows: 2 },
+          { id: "appetite", label: "Аппетит (стабильный, повышенный, сниженный)", type: "text" },
+          { id: "belly_pain", label: "Есть ли жалобы на боли в животе? Когда возникают?", type: "textarea", rows: 2 },
           { id: "stool", label: "Частота и характер стула", type: "textarea", rows: 2 },
-          { id: "bloating", label: "Вздутие/отрыжка/срыгивание/тошнота/рвота?", type: "textarea", rows: 2 },
+          { id: "bloating", label: "Есть ли вздутие, отрыжка, срыгивание, тошнота, рвота?", type: "textarea", rows: 2 },
           { id: "gi_intolerance", label: "Непереносимость продуктов", type: "textarea", rows: 2 },
         ],
       },
       {
         title: "Кожа / Аллергии / Лекарства",
         fields: [
-          { id: "skin", label: "Кожные проявления (высыпания/зуд/шелушение/экзема и т.п.)", type: "textarea", rows: 2 },
-          { id: "allergy", label: "Аллергические реакции (пища/лекарства/пыль/химия и т.п.)", type: "textarea", rows: 2 },
+          { id: "skin", label: "Есть ли кожные проявления (высыпания, зуд, шелушение, экзема, сухость, мокнутие)?", type: "textarea", rows: 2 },
+          { id: "allergy", label: "Есть ли аллергические реакции (пища, лекарства, пыль, химия и т.д.)?", type: "textarea", rows: 2 },
           { id: "allergy_how", label: "Как проявляются?", type: "textarea", rows: 2 },
-          { id: "meds", label: "Регулярные/периодические лекарства", type: "textarea", rows: 2 },
-          { id: "supplements", label: "БАДы/витамины/травы", type: "textarea", rows: 2 },
-          { id: "side_effects", label: "Побочные эффекты (если были)", type: "textarea", rows: 2 },
+          { id: "meds", label: "Принимает ли ребёнок регулярно или периодически лекарства?", type: "textarea", rows: 2 },
+          { id: "supplements", label: "Принимает ли БАДы, витамины, травы?", type: "textarea", rows: 2 },
+          { id: "side_effects", label: "Были ли побочные эффекты?", type: "textarea", rows: 2 },
         ],
       },
       {
         title: "Семейный анамнез",
         fields: [
-          { id: "family_diseases", label: "Заболевания в семье (ССЗ/онко/диабет/психические/кожные и т.д.)", type: "textarea", rows: 2 },
+          { id: "family_diseases", label: "Заболевания в семье (ССЗ, онко, диабет, психические, кожные и т.д.)", type: "textarea", rows: 2 },
           { id: "genetic", label: "Наследственные патологии (если известны)", type: "textarea", rows: 2 },
         ],
       },
     ],
   },
 
-  child: {
-    title: "Анкета для детей",
-    sections: [] // пока используем тот же набор, что child_u2
-  },
-
   teen: {
-    title: "Анкета для подростков",
-    sections: [] // заполним тем же каркасом, позже уточним по твоей таблице
+    title: "Анкета для подростков (с 7 лет)",
+    sections: [
+      {
+        title: "Основная причина обращения",
+        fields: [
+          { id: "reason", label: "Опишите жалобы, симптомы, ожидаемые изменения в состоянии здоровья", type: "textarea", rows: 3 },
+        ],
+      },
+      {
+        title: "Анамнез текущего состояния",
+        fields: [
+          { id: "when_started", label: "Когда впервые возникли жалобы?", type: "textarea", rows: 2 },
+          { id: "how_changed", label: "Как изменялось состояние со временем?", type: "textarea", rows: 2 },
+          { id: "measures", label: "Какие меры предпринимались (медикаменты, терапия, обследования)?", type: "textarea", rows: 2 },
+          { id: "teen_emotion", label: "Как подросток реагирует на своё состояние эмоционально?", type: "textarea", rows: 2 },
+        ],
+      },
+      {
+        title: "Общий анамнез",
+        fields: [
+          { id: "pregnancy_birth", label: "Беременность и роды (если известно)", type: "textarea", rows: 2 },
+          { id: "newborn_period", label: "Период новорождённости (если известно)", type: "textarea", rows: 2 },
+          { id: "vaccines", label: "Прививки (по графику/отсрочки/отказ)", type: "textarea", rows: 2 },
+          { id: "illness_hosp", label: "Перенесённые заболевания и госпитализации", type: "textarea", rows: 2 },
+          { id: "surgery_trauma", label: "Операции и травмы", type: "textarea", rows: 2 },
+        ],
+      },
+      {
+        title: "Питание",
+        fields: [
+          { id: "teen_food", label: "Как питается подросток (рацион, режим питания)", type: "textarea", rows: 2 },
+          { id: "food_intolerance", label: "Есть ли пищевая чувствительность, непереносимость (глютен, лактоза и пр.)?", type: "textarea", rows: 2 },
+          { id: "teen_diets", label: "Есть ли пищевые предпочтения, диеты, ограничения?", type: "textarea", rows: 2 },
+        ],
+      },
+      {
+        title: "Сон и восстановление",
+        fields: [
+          { id: "sleep_hours", label: "Сколько часов в сутки спит подросток?", type: "text", placeholder: "например: 7–9" },
+          { id: "sleep_quality", label: "Качество сна (глубокий, прерывистый, бессонница и т.п.)", type: "textarea", rows: 2 },
+          { id: "night_wake", label: "Бывают ли ночные пробуждения/бессонница?", type: "textarea", rows: 2 },
+        ],
+      },
+      {
+        title: "Психоэмоциональное состояние",
+        fields: [
+          { id: "mood", label: "Как подросток описывает своё настроение?", type: "textarea", rows: 2 },
+          { id: "psy_signs", label: "Есть ли тревожность, подавленность, раздражительность, апатия, усталость, эмоциональное выгорание?", type: "textarea", rows: 2 },
+          { id: "social", label: "Как подросток взаимодействует с окружающими?", type: "textarea", rows: 2 },
+        ],
+      },
+      {
+        title: "Состояние ЖКТ",
+        fields: [
+          { id: "appetite", label: "Аппетит (стабильный, повышенный, сниженный)", type: "text" },
+          { id: "gi_symptoms", label: "Боли в животе, вздутие, изжога, тошнота, рвота", type: "textarea", rows: 2 },
+          { id: "stool", label: "Частота и характер стула", type: "textarea", rows: 2 },
+          { id: "gi_intolerance", label: "Непереносимость продуктов", type: "textarea", rows: 2 },
+        ],
+      },
+      {
+        title: "Кожа / Аллергии / Лекарства",
+        fields: [
+          { id: "skin", label: "Есть ли кожные проявления (высыпания, зуд, шелушение, акне, экзема, изменения цвета кожи)?", type: "textarea", rows: 2 },
+          { id: "allergy", label: "Есть ли аллергические реакции (пища, лекарства, пыль, химия и т.д.)?", type: "textarea", rows: 2 },
+          { id: "allergy_how", label: "Как проявляются?", type: "textarea", rows: 2 },
+          { id: "meds", label: "Принимает ли подросток регулярно или периодически лекарства?", type: "textarea", rows: 2 },
+          { id: "supplements", label: "Принимает ли БАДы, витамины, травы?", type: "textarea", rows: 2 },
+          { id: "side_effects", label: "Были ли побочные эффекты?", type: "textarea", rows: 2 },
+        ],
+      },
+      {
+        title: "Семейный анамнез",
+        fields: [
+          { id: "family_diseases", label: "Заболевания в семье (ССЗ, онко, диабет, психические, кожные и т.д.)", type: "textarea", rows: 2 },
+          { id: "genetic", label: "Наследственные патологии (если известны)", type: "textarea", rows: 2 },
+        ],
+      },
+    ],
   },
 
   adult: {
     title: "Анкета для взрослых",
-    sections: [] // заполним тем же каркасом, позже уточним по твоей таблице
+    sections: [
+      {
+        title: "Основная причина обращения",
+        fields: [
+          { id: "reason", label: "Опишите жалобы, симптомы, ожидаемые изменения в состоянии здоровья", type: "textarea", rows: 3 },
+        ],
+      },
+      {
+        title: "Анамнез текущего состояния",
+        fields: [
+          { id: "when_started", label: "Когда впервые возникли жалобы?", type: "textarea", rows: 2 },
+          { id: "how_changed", label: "Как изменялось состояние со временем?", type: "textarea", rows: 2 },
+          { id: "measures", label: "Какие меры предпринимались (медикаменты, терапия, обследования)?", type: "textarea", rows: 2 },
+          { id: "impact", label: "Как вы оцениваете влияние проблемы на повседневную жизнь и эмоциональное состояние?", type: "textarea", rows: 2 },
+        ],
+      },
+      {
+        title: "Хронические и перенесённые заболевания",
+        fields: [
+          { id: "chronic_now", label: "Имеются ли хронические заболевания (гипертония, диабет, аутоиммунные, ЖКТ, кожа и т.д.)?", type: "textarea", rows: 2 },
+          { id: "past_illness", label: "Какие заболевания были перенесены ранее?", type: "textarea", rows: 2 },
+          { id: "hosp_surg", label: "Были ли госпитализации или хирургические вмешательства?", type: "textarea", rows: 2 },
+        ],
+      },
+      {
+        title: "Питание",
+        fields: [
+          { id: "diet", label: "Каков ваш обычный рацион?", type: "textarea", rows: 2 },
+          { id: "food_intolerance", label: "Есть ли пищевая чувствительность/непереносимость (глютен, лактоза и пр.)?", type: "textarea", rows: 2 },
+          { id: "eating_patterns", label: "Есть ли эпизоды переедания или ограничений в питании?", type: "textarea", rows: 2 },
+        ],
+      },
+      {
+        title: "Сон и восстановление",
+        fields: [
+          { id: "sleep_hours", label: "Сколько часов в сутки вы спите?", type: "text", placeholder: "например: 7–8" },
+          { id: "sleep_quality", label: "Качество сна (глубокий, прерывистый, бессонница и т.п.)", type: "textarea", rows: 2 },
+          { id: "energy", label: "Уровень энергии утром и в течение дня", type: "textarea", rows: 2 },
+        ],
+      },
+      {
+        title: "Психоэмоциональное состояние",
+        fields: [
+          { id: "emotional_state", label: "Как вы описали бы своё текущее эмоциональное состояние?", type: "textarea", rows: 2 },
+          { id: "psy_signs", label: "Есть ли тревожность, подавленность, раздражительность, усталость?", type: "textarea", rows: 2 },
+          { id: "stress_events", label: "Были ли стрессовые события в последние месяцы?", type: "textarea", rows: 2 },
+        ],
+      },
+      {
+        title: "Состояние ЖКТ",
+        fields: [
+          { id: "appetite", label: "Аппетит (стабильный, повышенный, сниженный)", type: "text" },
+          { id: "gi_symptoms", label: "Боли в животе, вздутие, изжога, тошнота, рвота", type: "textarea", rows: 2 },
+          { id: "stool", label: "Частота и характер стула", type: "textarea", rows: 2 },
+          { id: "gi_intolerance", label: "Непереносимость продуктов", type: "textarea", rows: 2 },
+        ],
+      },
+      {
+        title: "Кожа / Аллергии / Лекарства",
+        fields: [
+          { id: "skin", label: "Есть ли кожные проявления (высыпания, зуд, шелушение, акне, экзема, изменения цвета кожи)?", type: "textarea", rows: 2 },
+          { id: "allergy", label: "Есть ли аллергические реакции (пища, лекарства, пыль, химия и т.д.)?", type: "textarea", rows: 2 },
+          { id: "allergy_how", label: "Как проявляются?", type: "textarea", rows: 2 },
+          { id: "meds", label: "Принимаете ли вы регулярно или периодически лекарства?", type: "textarea", rows: 2 },
+          { id: "supplements", label: "Используете ли БАДы, витамины, травы?", type: "textarea", rows: 2 },
+          { id: "side_effects", label: "Были ли побочные эффекты?", type: "textarea", rows: 2 },
+        ],
+      },
+      {
+        title: "Семейный анамнез",
+        fields: [
+          { id: "family_diseases", label: "Заболевания в семье (ССЗ, онко, диабет, психические, кожные и т.д.)", type: "textarea", rows: 2 },
+          { id: "genetic", label: "Наследственные патологии (если известны)", type: "textarea", rows: 2 },
+        ],
+      },
+    ],
   },
 };
 
@@ -639,9 +786,8 @@ function renderMemberOverview(member) {
     0
   );
   const consLabels = [];
-const consLabels = [];
 if ((member.consult?.prev || "none") !== "none") consLabels.push("Превентивная");
-  const consLabel = consLabels.length ? consLabels.join(" · ") : "нет";
+const consLabel = consLabels.length ? consLabels.join(" · ") : "нет";
 
   return `
     <div class="space-y-3">
@@ -888,11 +1034,11 @@ function renderMemberConsult(activePatient, member) {
   const phone = activePatient ? activePatient.phone : "";
   const basePrev = `PREV • ${phone} • ${member.name}`;
 
-  function actionsBlock(text, type) {
+  function actionsBlock(text) {
     if (!isPatient) {
       return `
         <div class="mt-3 text-xs text-gray-500">
-          В режиме врача здесь только просмотр. Подтверждение оплаты — в разделе «Заявки на оплату».
+          В режиме врача здесь только просмотр. Подтверждение оплаты — в «Заявках на оплату».
         </div>
       `;
     }
@@ -902,7 +1048,7 @@ function renderMemberConsult(activePatient, member) {
           class="px-3 py-2 rounded-2xl bg-gray-100 text-sm active:scale-95 transition">
           Скопировать
         </button>
-        <button data-action="consult-pay" data-type="${type}"
+        <button data-action="consult-pay" data-type="prev"
           class="px-3 py-2 rounded-2xl bg-gray-900 text-white text-sm active:scale-95 transition">
           Оплачено
         </button>
@@ -912,25 +1058,6 @@ function renderMemberConsult(activePatient, member) {
 
   return `
     <div class="space-y-3">
-      <div class="bg-white rounded-2xl border border-gray-200 p-4 text-sm">
-        <div class="flex items-start justify-between gap-3">
-          <div>
-            <div class="text-xs text-gray-600 mt-1">Приоритетный ответ</div>
-          </div>
-          <div class="text-xs text-gray-600">
-            Статус: <b>${statusLabel(urgentStatus)}</b>
-          </div>
-        </div>
-
-        <div class="mt-3 text-sm text-gray-700">
-          Перевод на номер: <b>+7 (999) 000-00-00</b>
-        </div>
-        <div class="text-xs text-gray-600 mt-1">
-          Комментарий: <b>${escapeHtml(baseUrgent)}</b>
-        </div>
-
-      </div>
-
       <div class="bg-white rounded-2xl border border-gray-200 p-4 text-sm">
         <div class="flex items-start justify-between gap-3">
           <div>
@@ -949,7 +1076,7 @@ function renderMemberConsult(activePatient, member) {
           Комментарий: <b>${escapeHtml(basePrev)}</b>
         </div>
 
-        ${actionsBlock(basePrev, "prev")}
+        ${actionsBlock(basePrev)}
       </div>
     </div>
   `;
@@ -1768,8 +1895,8 @@ function handleConsultPay(type) {
     return;
   }
 
-  member.consult = member.consult || { urgent: "none", prev: "none" };
-  member.consult[type] = "pending";
+  member.consult = member.consult || { prev: "none" };
+  member.consult.prev = "pending";
 
   const req = {
     id: uid("pay"),
@@ -1799,13 +1926,14 @@ function handleDoctorConfirmPay(id, ok) {
   const patient = (state.patients || []).find((p) => p.id === r.patientId);
   const member = patient?.members?.find((m) => m.id === r.memberId);
   if (member) {
-    member.consult = member.consult || { urgent: "none", prev: "none" };
-    const label = "Превентивная";
-    if (ok) {
-      member.consult[r.type] = "active";
-    } else {
-      member.consult[r.type] = "none";
-    }
+    member.consult = member.consult || { prev: "none" };
+
+if (ok) {
+  member.consult.prev = "active";
+} else {
+  member.consult.prev = "none";
+}
+
     member.chats = member.chats || [];
     member.chats.push({
       from: "doctor",
@@ -1957,7 +2085,7 @@ if (page === "family" && state.mode !== "doctor" && !getActivePatient()) {
   state.uiAnketaOpen = true;
   render();
   break;
-  state.uiAnketaOpen = true;
+      
       case "delete-anketa":
   if (state.mode !== "patient") { showToast("Только пациент"); break; }
   handleDeleteAnketa();
