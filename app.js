@@ -5,11 +5,6 @@ const DOCTOR_PIN = "2580";
 // === Шаблоны анкет (4 типа) ===
 const ANKETA_TEMPLATES = {
    
-child_u2: {
-  title: "Анкета для детей до 2 лет",
-  sections: ANKETA_TEMPLATES.child.sections
-},
-   
    child: {
     title: "Анкета для детей",
     sections: [
@@ -255,21 +250,116 @@ child_u2: {
     ],
   },
 };
+   
+// ✅ Добавляем child_u2 ПОСЛЕ инициализации объекта (иначе ошибка)
+ANKETA_TEMPLATES.child_u2 = {
+  title: "Анкета для детей до 2 лет",
+  sections: ANKETA_TEMPLATES.child.sections,
+};
+
 
 // Временно: чтобы прямо сейчас всё работало одинаково, копируем структуру child_u2
 
 // Ключ анкеты по возрасту
 function anketaKeyForDob(dob) {
   const a = ageFromDob(dob);
-  if (a.totalMonths < 24) return "child";   // ✅ было child_u2
+  if (a.totalMonths < 24) return "child_u2";  // ✅ дети до 2 лет
   if (a.years >= 7 && a.years < 18) return "teen";
   if (a.years >= 18) return "adult";
   return "child";
 }
 
+
 let state; // заполним чуть ниже
 let toastTimeout = null;
 let brandTapTimes = [];
+
+// ✅ сторис логика
+let storyRaf = null;
+
+function stopStory() {
+  if (storyRaf) cancelAnimationFrame(storyRaf);
+  storyRaf = null;
+}
+
+function closeStory() {
+  state.uiStoryOpen = false;
+  state.storyPaused = false;
+  state.storyProgress = 0;
+  stopStory();
+  render();
+}
+
+function storyNext() {
+  const stories = getHomeStories();
+  if (!stories.length) return closeStory();
+
+  if (state.storyIndex < stories.length - 1) {
+    state.storyIndex += 1;
+    state.storyProgress = 0;
+    render();
+  } else {
+    closeStory();
+  }
+}
+
+function storyPrev() {
+  if (state.storyProgress > 0.12) {
+    state.storyProgress = 0;
+    render();
+    return;
+  }
+  if (state.storyIndex > 0) {
+    state.storyIndex -= 1;
+    state.storyProgress = 0;
+    render();
+  }
+}
+
+function startStoryPlayer() {
+  stopStory();
+  let last = performance.now();
+
+  const tick = (ts) => {
+    if (!state.uiStoryOpen) return stopStory();
+
+    const stories = getHomeStories();
+    const s = stories[state.storyIndex];
+    const dur = Math.max(1, Number(s?.seconds || 5)) * 1000;
+
+    if (!state.storyPaused) {
+      const dt = ts - last;
+      state.storyProgress += dt / dur;
+
+      if (state.storyProgress >= 1) {
+        state.storyProgress = 0;
+        storyNext();
+        last = ts;
+        storyRaf = requestAnimationFrame(tick);
+        return;
+      }
+      render();
+    }
+
+    last = ts;
+    storyRaf = requestAnimationFrame(tick);
+  };
+
+  storyRaf = requestAnimationFrame(tick);
+}
+
+function openStory(index) {
+  const stories = getHomeStories();
+  if (!stories.length) return;
+
+  state.uiStoryOpen = true;
+  state.storyIndex = Math.max(0, Math.min(stories.length - 1, Number(index || 0)));
+  state.storyProgress = 0;
+  state.storyPaused = false;
+
+  render();
+  startStoryPlayer();
+}
 
 // === Хелперы ===
 function uid(prefix = "id") {
@@ -329,6 +419,11 @@ function fmtMemberMeta(m) {
 
 // === Доктор, пациенты, демо-данные ===
 function defaultDoctorProfile() {
+   stories: [
+  { id: uid("s"), title: "Сон ребенка", text: "Как перевели семью с ночных просыпаний на стабильный сон.", seconds: 5, image: "" },
+  { id: uid("s"), title: "Хроническая усталость", text: "Кейс, где анализы и режим дня вернули энергию.", seconds: 5, image: "" },
+  { id: uid("s"), title: "Кишечник", text: "История про вздутие, питание и микробиоту.", seconds: 5, image: "" },
+],
   return {
     name: "Имя Фамилия",
     title: "Врач превентивной медицины",
@@ -354,7 +449,28 @@ function defaultDoctorProfile() {
     story3Title: "Кишечник",
     story3Text:
       "История про вздутие, питание и микробиоту.",
+      // ✅ Новый формат сторис (для инста-логики и конструктора)
+stories: [
+  { id: uid("s"), title: "Сон ребенка", text: "Как перевели семью с ночных просыпаний на стабильный сон.", seconds: 5, image: "" },
+  { id: uid("s"), title: "Хроническая усталость", text: "Кейс, где анализы и режим дня вернули энергию.", seconds: 5, image: "" },
+  { id: uid("s"), title: "Кишечник", text: "История про вздутие, питание и микробиоту.", seconds: 5, image: "" },
+],
   };
+   
+}
+
+function getHomeStories() {
+  const d = state.doctorProfile || {};
+  const stories = Array.isArray(d.stories) ? d.stories : [];
+  return stories
+    .map((s) => ({
+      id: s.id || uid("s"),
+      title: (s.title || "").trim(),
+      text: (s.text || "").trim(),
+      seconds: Number(s.seconds || 5),
+      image: s.image || "",
+    }))
+    .filter((s) => s.title || s.text || s.image);
 }
 
 function defaultMember({ name, dob, sex, relation }) {
@@ -515,6 +631,10 @@ function initialState() {
     uiAddMemberOpen: false,
     uiAnketaOpen: false,
     uiRegisterOpen: false,
+    uiStoryOpen: false,
+    storyIndex: 0,
+    storyProgress: 0, // 0..1
+    storyPaused: false,
   };
 }
 
@@ -570,12 +690,18 @@ function loadState() {
 function saveState() {
   try {
     const {
-      toast,
-      uiAddMemberOpen,
-      uiAnketaOpen,
-       uiRegisterOpen, // ✅ добавь
-      ...rest
-    } = state;
+  toast,
+  uiAddMemberOpen,
+  uiAnketaOpen,
+  uiRegisterOpen,
+
+  uiStoryOpen,
+  storyIndex,
+  storyProgress,
+  storyPaused,
+
+  ...rest
+} = state;
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(rest));
   } catch (e) {
     console.warn("Ошибка сохранения состояния", e);
@@ -636,13 +762,28 @@ function renderStoryCard(title, text) {
   `;
 }
 
+function getHomeStories() {
+  const d = state.doctorProfile || {};
+  const stories = Array.isArray(d.stories) ? d.stories : [];
+  return stories
+    .map((s) => ({
+      id: s.id || uid("s"),
+      title: (s.title || "").trim(),
+      text: (s.text || "").trim(),
+      seconds: Number(s.seconds || 5),
+      image: s.image || "",
+    }))
+    .filter((s) => s.title || s.text || s.image);
+}
+
 function renderHome() {
   const d = state.doctorProfile;
   const guides = (d.guidesText || "")
     .split(",")
     .map((g) => g.trim())
     .filter(Boolean);
-
+   
+  const stories = getHomeStories();
   return `
     <div class="p-4 space-y-4">
       <div class="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
@@ -701,13 +842,31 @@ function renderHome() {
         </div>
       </div>
 
-      <div class="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
+           <div class="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
         <div class="font-semibold text-gray-900 mb-2">Истории</div>
-        <div class="flex gap-3 overflow-x-auto pb-1">
-          ${renderStoryCard(d.story1Title, d.story1Text)}
-          ${renderStoryCard(d.story2Title, d.story2Text)}
-          ${renderStoryCard(d.story3Title, d.story3Text)}
-        </div>
+
+        ${
+          stories.length
+            ? `<div class="flex gap-3 overflow-x-auto pb-1">
+                ${stories
+                  .map(
+                    (s, i) => `
+                  <button data-action="open-story" data-index="${i}"
+                    class="shrink-0 w-[76px] text-center active:scale-95 transition">
+                    <div class="mx-auto w-16 h-16 rounded-full border-2 border-gray-900 flex items-center justify-center bg-gray-50">
+                      <span class="text-xl">▶️</span>
+                    </div>
+                    <div class="mt-1 text-[11px] text-gray-700 leading-tight">
+                      ${escapeHtml((s.title || "История").slice(0, 18))}
+                    </div>
+                  </button>
+                `
+                  )
+                  .join("")}
+              </div>`
+            : `<div class="text-sm text-gray-600">Историй пока нет</div>`
+        }
+      </div>
       </div>
     </div>
   `;
@@ -1168,6 +1327,8 @@ function renderDoctor() {
 
   const view = state.doctorView || "patients";
 
+   if (view === "builder") return renderBuilder();
+
   const patientsHtml = patients
     .map((p) => {
       const active = selected && p.id === selected.id;
@@ -1196,6 +1357,10 @@ function renderDoctor() {
             class="px-3 py-1.5 rounded-2xl bg-gray-100 text-sm text-gray-800 active:scale-95 transition">
             ← Выйти
           </button>
+          <button data-action="open-builder"
+  class="px-3 py-1.5 rounded-2xl bg-gray-900 text-white text-sm active:scale-95 transition">
+  ⚙️ Конструктор
+</button>
           <div class="text-right text-xs text-gray-600">
             Кабинет врача • статус: <b>${state.doctorStatus === "online" ? "онлайн" : "оффлайн"}</b>
           </div>
@@ -1300,6 +1465,125 @@ function renderDoctor() {
       <div class="bg-white rounded-2xl border border-gray-200 p-4">
         <div class="font-semibold text-gray-900 mb-2">Семья пациента</div>
         <div class="space-y-2">${familyHtml}</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderBuilder() {
+  const d = state.doctorProfile || {};
+  const stories = getHomeStories();
+
+  return `
+    <div class="p-4 space-y-4">
+      <div class="flex items-center justify-between">
+        <button data-action="builder-back"
+          class="px-3 py-1.5 rounded-2xl bg-gray-100 text-sm text-gray-800 active:scale-95 transition">
+          ← Назад
+        </button>
+        <div class="text-xs text-gray-600">Конструктор главного экрана</div>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-gray-200 p-4 space-y-3">
+        <div>
+          <div class="text-xs text-gray-500">Имя</div>
+          <input id="b_name" value="${escapeAttr(d.name || "")}"
+            class="mt-1 w-full rounded-2xl border border-gray-300 bg-gray-50 px-3 py-2 text-sm"/>
+        </div>
+
+        <div>
+          <div class="text-xs text-gray-500">Заголовок</div>
+          <input id="b_title" value="${escapeAttr(d.title || "")}"
+            class="mt-1 w-full rounded-2xl border border-gray-300 bg-gray-50 px-3 py-2 text-sm"/>
+        </div>
+
+        <div>
+          <div class="text-xs text-gray-500">Подзаголовок</div>
+          <textarea id="b_subtitle" rows="2"
+            class="mt-1 w-full rounded-2xl border border-gray-300 bg-gray-50 px-3 py-2 text-sm">${escapeHtml(d.subtitle || "")}</textarea>
+        </div>
+
+        <div>
+          <div class="text-xs text-gray-500">Моё образование</div>
+          <textarea id="b_edu" rows="4"
+            class="mt-1 w-full rounded-2xl border border-gray-300 bg-gray-50 px-3 py-2 text-sm">${escapeHtml(d.educationText || "")}</textarea>
+        </div>
+
+        <div>
+          <div class="text-xs text-gray-500">О себе (только текст)</div>
+          <textarea id="b_about" rows="4"
+            class="mt-1 w-full rounded-2xl border border-gray-300 bg-gray-50 px-3 py-2 text-sm">${escapeHtml(d.aboutText || "")}</textarea>
+        </div>
+
+        <div>
+          <div class="text-xs text-gray-500">Методичка</div>
+          <textarea id="b_method" rows="4"
+            class="mt-1 w-full rounded-2xl border border-gray-300 bg-gray-50 px-3 py-2 text-sm">${escapeHtml(d.methodText || "")}</textarea>
+        </div>
+
+        <div>
+          <div class="text-xs text-gray-500">Гайды (через запятую)</div>
+          <input id="b_guides" value="${escapeAttr(d.guidesText || "")}"
+            class="mt-1 w-full rounded-2xl border border-gray-300 bg-gray-50 px-3 py-2 text-sm"/>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-gray-200 p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="font-semibold text-gray-900">Истории</div>
+          <button data-action="builder-add-story"
+            class="px-3 py-1.5 rounded-2xl bg-gray-900 text-white text-xs active:scale-95 transition">
+            + История
+          </button>
+        </div>
+
+        <div class="space-y-3">
+          ${stories.map((s, i) => `
+            <div class="border border-gray-200 rounded-2xl p-3 bg-gray-50">
+              <div class="flex items-center justify-between gap-2">
+                <div class="font-semibold text-sm text-gray-900">История ${i+1}</div>
+                <div class="flex gap-2">
+                  <button data-action="builder-move-story" data-index="${i}" data-dir="-1"
+                    class="px-2 py-1 rounded-xl bg-white text-xs border border-gray-200">↑</button>
+                  <button data-action="builder-move-story" data-index="${i}" data-dir="1"
+                    class="px-2 py-1 rounded-xl bg-white text-xs border border-gray-200">↓</button>
+                  <button data-action="builder-del-story" data-index="${i}"
+                    class="px-2 py-1 rounded-xl bg-red-50 text-red-700 text-xs">Удалить</button>
+                </div>
+              </div>
+
+              <div class="mt-2">
+                <div class="text-xs text-gray-500">Заголовок</div>
+                <input id="b_story_title_${i}" value="${escapeAttr(s.title || "")}"
+                  class="mt-1 w-full rounded-2xl border border-gray-300 bg-white px-3 py-2 text-sm"/>
+              </div>
+
+              <div class="mt-2">
+                <div class="text-xs text-gray-500">Текст</div>
+                <textarea id="b_story_text_${i}" rows="3"
+                  class="mt-1 w-full rounded-2xl border border-gray-300 bg-white px-3 py-2 text-sm">${escapeHtml(s.text || "")}</textarea>
+              </div>
+
+              <div class="mt-2 grid grid-cols-2 gap-2">
+                <div>
+                  <div class="text-xs text-gray-500">Длительность (сек)</div>
+                  <input id="b_story_sec_${i}" type="number" value="${escapeAttr(String(s.seconds || 5))}"
+                    class="mt-1 w-full rounded-2xl border border-gray-300 bg-white px-3 py-2 text-sm"/>
+                </div>
+                <div>
+                  <div class="text-xs text-gray-500">Картинка (URL, необязательно)</div>
+                  <input id="b_story_img_${i}" value="${escapeAttr(s.image || "")}"
+                    class="mt-1 w-full rounded-2xl border border-gray-300 bg-white px-3 py-2 text-sm"/>
+                </div>
+              </div>
+            </div>
+          `).join("")}
+        </div>
+
+        <button data-action="builder-save"
+          class="w-full rounded-2xl bg-gray-900 text-white text-sm py-2.5 active:scale-95 transition">
+          Сохранить изменения
+        </button>
       </div>
     </div>
   `;
@@ -1553,6 +1837,67 @@ function renderModals(activePatient, member) {
   `;
 }
 
+     // ✅ СТОРИС ПЛЕЕР
+  if (state.uiStoryOpen) {
+    const stories = getHomeStories();
+    const s = stories[state.storyIndex] || null;
+
+    const bars = stories
+      .map((_, i) => {
+        let w = 0;
+        if (i < state.storyIndex) w = 100;
+        else if (i === state.storyIndex)
+          w = Math.max(0, Math.min(100, Math.round(state.storyProgress * 100)));
+        return `
+          <div class="flex-1 h-1 bg-white bg-opacity-30 rounded-full overflow-hidden">
+            <div class="h-1 bg-white" style="width:${w}%"></div>
+          </div>
+        `;
+      })
+      .join("");
+
+    html += `
+      <div class="fixed inset-0 z-50 bg-black bg-opacity-80 flex items-stretch justify-center">
+        <div id="storyViewer" class="w-full max-w-md relative flex flex-col"
+             style="height: calc(var(--vh, 1vh) * 100);">
+
+          <div class="px-3 pt-3">
+            <div class="flex gap-1.5">${bars}</div>
+            <div class="mt-3 flex items-center justify-between text-white">
+              <div class="text-sm font-semibold">${escapeHtml(s?.title || "")}</div>
+              <button data-action="story-close"
+                class="px-2 py-1 rounded-xl bg-white bg-opacity-10 active:scale-95 transition">✕</button>
+            </div>
+          </div>
+
+          <div class="flex-1 px-3 pb-4 pt-4 flex items-center justify-center">
+            <div class="w-full rounded-3xl overflow-hidden bg-gray-900 relative">
+              ${
+                s?.image
+                  ? `<img src="${escapeAttr(s.image)}" class="w-full h-[70vh] object-cover" />`
+                  : `<div class="w-full h-[70vh] flex items-center justify-center p-6">
+                       <div class="text-white text-base whitespace-pre-line text-center">${escapeHtml(s?.text || "")}</div>
+                     </div>`
+              }
+
+              ${s?.image && s?.text
+                ? `<div class="absolute inset-x-0 bottom-0 p-4 bg-black bg-opacity-50">
+                     <div class="text-white text-sm whitespace-pre-line">${escapeHtml(s.text)}</div>
+                   </div>`
+                : ""
+              }
+            </div>
+          </div>
+
+          <!-- тапы как в инсте -->
+          <button data-action="story-prev" class="absolute left-0 top-0 bottom-0 w-1/2"></button>
+          <button data-action="story-next" class="absolute right-0 top-0 bottom-0 w-1/2"></button>
+
+        </div>
+      </div>
+    `;
+  }
+   
   return html;
 }
 
@@ -1606,6 +1951,37 @@ function render() {
 }
 
 // === Логика действий ===
+
+function handleBuilderSave() {
+  const d = state.doctorProfile;
+
+  const v = (id) => {
+    const el = document.getElementById(id);
+    return el ? String(el.value || "").trim() : "";
+  };
+
+  d.name = v("b_name");
+  d.title = v("b_title");
+  d.subtitle = v("b_subtitle");
+  d.educationText = v("b_edu");
+  d.aboutText = v("b_about");
+  d.methodText = v("b_method");
+  d.guidesText = v("b_guides");
+
+  const stories = Array.isArray(d.stories) ? d.stories : [];
+  d.stories = stories.map((s, i) => ({
+    ...s,
+    title: v(`b_story_title_${i}`),
+    text: v(`b_story_text_${i}`),
+    seconds: Math.max(1, Number(v(`b_story_sec_${i}`) || 5)),
+    image: v(`b_story_img_${i}`),
+  }));
+
+  saveState();
+  render();
+  showToast("Главный экран обновлён");
+}
+
 function handleSaveAddMember() {
     if (state.mode !== "patient") {
     showToast("Добавлять членов семьи может только пациент");
@@ -1920,10 +2296,11 @@ function handleConsultPay(type) {
 }
 
 function handleDoctorConfirmPay(id, ok) {
-    if (state.mode !== "doctor") {
+  if (state.mode !== "doctor") {
     showToast("Доступно только врачу");
     return;
   }
+
   const r = (state.paymentRequests || []).find((x) => x.id === id);
   if (!r || r.status !== "pending") return;
 
@@ -1931,25 +2308,13 @@ function handleDoctorConfirmPay(id, ok) {
 
   const patient = (state.patients || []).find((p) => p.id === r.patientId);
   const member = patient?.members?.find((m) => m.id === r.memberId);
+
   if (member) {
     member.consult = member.consult || { prev: "none" };
+    member.consult.prev = ok ? "active" : "none";
 
-if (ok) {
-  member.consult.prev = "active";
-} else {
-  member.consult.prev = "none";
-}
+    const label = "Превентивная";
 
-     const label = "Превентивная"; // ✅ добавь
-
-member.chats.push({
-  from: "doctor",
-  text: ok
-    ? `Подтвердил(а) оплату: ${label} ✅ Доступ открыт.`
-    : `Оплата не найдена. Заявка отклонена (${label}).`,
-  ts: Date.now(),
-});
-     
     member.chats = member.chats || [];
     member.chats.push({
       from: "doctor",
@@ -2158,6 +2523,55 @@ if (page === "family" && state.mode !== "doctor" && !getActivePatient()) {
   render();
   break;
 
+        case "open-builder":
+  if (state.mode !== "doctor") { showToast("Только врач"); break; }
+  state.doctorView = "builder";
+  saveState();
+  render();
+  break;
+
+case "builder-back":
+  if (state.mode !== "doctor") { showToast("Только врач"); break; }
+  state.doctorView = "patients";
+  saveState();
+  render();
+  break;
+
+case "builder-add-story":
+  if (state.mode !== "doctor") { showToast("Только врач"); break; }
+  state.doctorProfile.stories = Array.isArray(state.doctorProfile.stories) ? state.doctorProfile.stories : [];
+  state.doctorProfile.stories.push({ id: uid("s"), title: "", text: "", seconds: 5, image: "" });
+  saveState();
+  render();
+  break;
+
+case "builder-del-story": {
+  if (state.mode !== "doctor") { showToast("Только врач"); break; }
+  const i = Number(el.dataset.index);
+  if (Array.isArray(state.doctorProfile.stories)) state.doctorProfile.stories.splice(i, 1);
+  saveState();
+  render();
+  break;
+}
+
+case "builder-move-story": {
+  if (state.mode !== "doctor") { showToast("Только врач"); break; }
+  const i = Number(el.dataset.index);
+  const dir = Number(el.dataset.dir);
+  const arr = state.doctorProfile.stories || [];
+  const j = i + dir;
+  if (j < 0 || j >= arr.length) break;
+  const tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+  saveState();
+  render();
+  break;
+}
+
+case "builder-save":
+  if (state.mode !== "doctor") { showToast("Только врач"); break; }
+  handleBuilderSave();
+  break;
+        
           case "doctor-open-member": {
       if (state.mode !== "doctor") { showToast("Только врач"); break; }
       const pid = el.dataset.patientId;
@@ -2181,6 +2595,24 @@ if (page === "family" && state.mode !== "doctor" && !getActivePatient()) {
       handleDoctorConfirmPay(id, ok);
       break;
     }
+
+        case "open-story":
+  openStory(Number(el.dataset.index || 0));
+  break;
+
+case "story-close":
+  closeStory();
+  break;
+
+case "story-next":
+  storyNext();
+  break;
+
+case "story-prev":
+  storyPrev();
+  break;
+
+        
           case "doctor-exit":
   if (state.mode !== "doctor") { showToast("Только врач"); break; }
   state.mode = "patient";
@@ -2194,6 +2626,27 @@ if (page === "family" && state.mode !== "doctor" && !getActivePatient()) {
 
   }
 });
+
+// ✅ свайпы сторис (мобильные)
+let storySwipeStartX = null;
+
+document.addEventListener("touchstart", (e) => {
+  if (!state?.uiStoryOpen) return;
+  storySwipeStartX = e.touches?.[0]?.clientX ?? null;
+}, { passive: true });
+
+document.addEventListener("touchend", (e) => {
+  if (!state?.uiStoryOpen) return;
+  if (storySwipeStartX == null) return;
+
+  const endX = e.changedTouches?.[0]?.clientX ?? storySwipeStartX;
+  const dx = endX - storySwipeStartX;
+  storySwipeStartX = null;
+
+  if (Math.abs(dx) < 40) return; // порог свайпа
+  if (dx > 0) storyPrev();
+  else storyNext();
+}, { passive: true });
 
 function setAppVh() {
   document.documentElement.style.setProperty("--vh", `${window.innerHeight * 0.01}px`);
