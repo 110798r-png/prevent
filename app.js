@@ -419,11 +419,6 @@ function fmtMemberMeta(m) {
 
 // === Доктор, пациенты, демо-данные ===
 function defaultDoctorProfile() {
-   stories: [
-  { id: uid("s"), title: "Сон ребенка", text: "Как перевели семью с ночных просыпаний на стабильный сон.", seconds: 5, image: "" },
-  { id: uid("s"), title: "Хроническая усталость", text: "Кейс, где анализы и режим дня вернули энергию.", seconds: 5, image: "" },
-  { id: uid("s"), title: "Кишечник", text: "История про вздутие, питание и микробиоту.", seconds: 5, image: "" },
-],
   return {
     name: "Имя Фамилия",
     title: "Врач превентивной медицины",
@@ -440,23 +435,40 @@ function defaultDoctorProfile() {
       "2. Какие анализы обычно нужны.\n" +
       "3. Как вести дневник самочувствия.",
     guidesText: "Сон, Питание, Кишечник, Гормоны, Дети",
+
+    // Старые поля можно оставить (не мешают)
     story1Title: "Сон ребенка",
-    story1Text:
-      "Как перевели семью с ночных просыпаний на стабильный сон.",
+    story1Text: "Как перевели семью с ночных просыпаний на стабильный сон.",
     story2Title: "Хроническая усталость",
-    story2Text:
-      "Кейс, где анализы и режим дня вернули энергию.",
+    story2Text: "Кейс, где анализы и режим дня вернули энергию.",
     story3Title: "Кишечник",
-    story3Text:
-      "История про вздутие, питание и микробиоту.",
-      // ✅ Новый формат сторис (для инста-логики и конструктора)
-stories: [
-  { id: uid("s"), title: "Сон ребенка", text: "Как перевели семью с ночных просыпаний на стабильный сон.", seconds: 5, image: "" },
-  { id: uid("s"), title: "Хроническая усталость", text: "Кейс, где анализы и режим дня вернули энергию.", seconds: 5, image: "" },
-  { id: uid("s"), title: "Кишечник", text: "История про вздутие, питание и микробиоту.", seconds: 5, image: "" },
-],
+    story3Text: "История про вздутие, питание и микробиоту.",
+
+    // ✅ Новый формат сторис (инста-логика + конструктор)
+    stories: [
+      {
+        id: uid("s"),
+        title: "Сон ребенка",
+        text: "Как перевели семью с ночных просыпаний на стабильный сон.",
+        seconds: 5,
+        image: "",
+      },
+      {
+        id: uid("s"),
+        title: "Хроническая усталость",
+        text: "Кейс, где анализы и режим дня вернули энергию.",
+        seconds: 5,
+        image: "",
+      },
+      {
+        id: uid("s"),
+        title: "Кишечник",
+        text: "История про вздутие, питание и микробиоту.",
+        seconds: 5,
+        image: "",
+      },
+    ],
   };
-   
 }
 
 function getHomeStories() {
@@ -762,20 +774,6 @@ function renderStoryCard(title, text) {
   `;
 }
 
-function getHomeStories() {
-  const d = state.doctorProfile || {};
-  const stories = Array.isArray(d.stories) ? d.stories : [];
-  return stories
-    .map((s) => ({
-      id: s.id || uid("s"),
-      title: (s.title || "").trim(),
-      text: (s.text || "").trim(),
-      seconds: Number(s.seconds || 5),
-      image: s.image || "",
-    }))
-    .filter((s) => s.title || s.text || s.image);
-}
-
 function renderHome() {
   const d = state.doctorProfile;
   const guides = (d.guidesText || "")
@@ -866,7 +864,6 @@ function renderHome() {
               </div>`
             : `<div class="text-sm text-gray-600">Историй пока нет</div>`
         }
-      </div>
       </div>
     </div>
   `;
