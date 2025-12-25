@@ -4,6 +4,12 @@ const DOCTOR_PIN = "2580";
 
 // === Шаблоны анкет (4 типа) ===
 const ANKETA_TEMPLATES = {
+   
+child_u2: {
+  title: "Анкета для детей до 2 лет",
+  sections: ANKETA_TEMPLATES.child.sections
+},
+   
    child: {
     title: "Анкета для детей",
     sections: [
@@ -255,7 +261,7 @@ const ANKETA_TEMPLATES = {
 // Ключ анкеты по возрасту
 function anketaKeyForDob(dob) {
   const a = ageFromDob(dob);
-  if (a.totalMonths < 24) return "child_u2";
+  if (a.totalMonths < 24) return "child";   // ✅ было child_u2
   if (a.years >= 7 && a.years < 18) return "teen";
   if (a.years >= 18) return "adult";
   return "child";
@@ -1934,6 +1940,16 @@ if (ok) {
   member.consult.prev = "none";
 }
 
+     const label = "Превентивная"; // ✅ добавь
+
+member.chats.push({
+  from: "doctor",
+  text: ok
+    ? `Подтвердил(а) оплату: ${label} ✅ Доступ открыт.`
+    : `Оплата не найдена. Заявка отклонена (${label}).`,
+  ts: Date.now(),
+});
+     
     member.chats = member.chats || [];
     member.chats.push({
       from: "doctor",
